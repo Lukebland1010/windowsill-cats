@@ -1,0 +1,2542 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#E7EDEB" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101615" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Windowsill Cats">
+<meta name="description" content="A cat logic puzzle. One cat per row, column and patch. No ads, ever.">
+<title>Windowsill Cats</title>
+
+<style>
+/* ===================================================================
+   PALETTE
+   Light values live on bare :root. Dark redefines only what changes,
+   once for the system preference and once for the manual override.
+   =================================================================== */
+:root{
+  --bg:#E7EDEB; --surface:#FCFDFC; --surface-2:#F1F5F3; --surface-3:#E4EBE8;
+  --ink:#16201E; --muted:#5A6B67; --line:rgba(22,32,30,.14);
+  --regionline:#16201E; --gridline:rgba(22,32,30,.20);
+  --accent:#8A3A5C; --accent-ink:#fff; --accent-soft:#F0DCE4;
+  --danger:#B0303A; --danger-soft:#F7DEDF; --good:#2A6B4C;
+  --gold:#B07C1E;
+  --shadow:0 1px 0 rgba(22,32,30,.05), 0 8px 24px -14px rgba(22,32,30,.45);
+  --radius:12px;
+  /* Region tints. Hues chosen from the Okabe-Ito colourblind-safe set and
+     separated by lightness as well as hue, so red/green confusion still
+     leaves them distinguishable. The Patterns toggle adds texture on top. */
+  --r0:#F6C69B; --r1:#FAEDA4; --r2:#A5DCC1; --r3:#A6D6EE; --r4:#B4C3E9;
+  --r5:#E6B6D3; --r6:#F3B3A2; --r7:#DAD5C3; --r8:#B9CBC7; --r9:#CDBEE9;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#101615; --surface:#19211F; --surface-2:#212A28; --surface-3:#2A3432;
+    --ink:#E6EDEA; --muted:#93A29E; --line:rgba(230,237,234,.16);
+    --regionline:#F3F7F5; --gridline:rgba(230,237,234,.22);
+    --accent:#E294B3; --accent-ink:#1A1013; --accent-soft:#3A2430;
+    --danger:#E58A8A; --danger-soft:#3B2124; --good:#7EC9A2;
+    --gold:#E3B860;
+    --shadow:0 1px 0 rgba(0,0,0,.4), 0 10px 28px -16px #000;
+    --r0:#7A4C33; --r1:#6F6330; --r2:#33604A; --r3:#2C5468; --r4:#3B4670;
+    --r5:#65395A; --r6:#71383A; --r7:#5A5545; --r8:#3F5250; --r9:#4E4070;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101615; --surface:#19211F; --surface-2:#212A28; --surface-3:#2A3432;
+  --ink:#E6EDEA; --muted:#93A29E; --line:rgba(230,237,234,.16);
+  --regionline:#F3F7F5; --gridline:rgba(230,237,234,.22);
+  --accent:#E294B3; --accent-ink:#1A1013; --accent-soft:#3A2430;
+  --danger:#E58A8A; --danger-soft:#3B2124; --good:#7EC9A2;
+  --gold:#E3B860;
+  --shadow:0 1px 0 rgba(0,0,0,.4), 0 10px 28px -16px #000;
+  --r0:#7A4C33; --r1:#6F6330; --r2:#33604A; --r3:#2C5468; --r4:#3B4670;
+  --r5:#65395A; --r6:#71383A; --r7:#5A5545; --r8:#3F5250; --r9:#4E4070;
+}
+
+/* --- unlockable cosmetic themes (no gameplay effect) --------------- */
+:root[data-pal="laundry"]{
+  --r0:#EBD9C4; --r1:#F2E7CE; --r2:#CBD9C6; --r3:#C2D4DA; --r4:#C8CCDE;
+  --r5:#DCC8D4; --r6:#E8CDBE; --r7:#DAD6CA; --r8:#C6CFCB; --r9:#D2C8DE;
+  --regionline:#5C544A; --accent:#7A6A55; --accent-soft:#EDE5D8;
+}
+:root[data-pal="laundry"][data-theme="dark"], :root[data-pal="laundry"]:not([data-theme="light"]) .darkonly{}
+:root[data-pal="midnight"]{
+  --r0:#3A3352; --r1:#37405E; --r2:#2E4A55; --r3:#2B3C57; --r4:#414068;
+  --r5:#4B3557; --r6:#523650; --r7:#3E3B4E; --r8:#334247; --r9:#463C63;
+  --regionline:#CFC8F0; --gridline:rgba(207,200,240,.24);
+  --bg:#0B0B14; --surface:#14141F; --surface-2:#1C1C2A; --surface-3:#252537;
+  --ink:#E8E6F5; --muted:#9B98B8; --line:rgba(232,230,245,.16);
+  --accent:#9D8DF1; --accent-ink:#0B0B14; --accent-soft:#2A2545;
+}
+:root[data-pal="sunbeam"]{
+  --r0:#FFD9A0; --r1:#FFF0B0; --r2:#CDE8B4; --r3:#B8E2E8; --r4:#C4D2F0;
+  --r5:#F2C4DC; --r6:#FFC2A8; --r7:#EDE0BE; --r8:#CFDCCB; --r9:#DDC9F0;
+  --regionline:#7A4A12; --accent:#C2701A; --accent-soft:#FCE6CC; --gold:#C2701A;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; padding:14px 12px calc(28px + env(safe-area-inset-bottom));
+  background:var(--bg); color:var(--ink);
+  font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:15px; line-height:1.45;
+  display:flex; justify-content:center;
+  -webkit-tap-highlight-color:transparent;
+  overflow-x:hidden;
+}
+.wrap{width:100%; max-width:520px; display:flex; flex-direction:column; gap:12px}
+/* On an iPad the phone-width column leaves the board tiny, so let it grow.
+   Capped well short of full width: a board you cannot span with a thumb is
+   worse than a slightly small one. */
+/* Deliberately no dvh-based vertical centring: dvh changes as iOS Safari
+   shows and hides its URL bar, which makes the whole column jump on scroll. */
+@media (min-width:760px) and (min-height:900px){
+  body{padding-top:60px}
+}
+@media (min-width:760px){
+  body{padding-top:26px}
+  .wrap{max-width:620px; gap:14px}
+  h1{font-size:26px}
+  .sheetin{max-width:620px}
+}
+@media (min-width:1080px){
+  .wrap{max-width:680px}
+  .sheetin{max-width:680px}
+}
+
+/* --- header ------------------------------------------------------- */
+header{display:flex; align-items:center; justify-content:space-between; gap:10px}
+.brand{display:flex; flex-direction:column; gap:2px; min-width:0}
+h1{font-size:22px; font-weight:800; letter-spacing:-.02em; margin:0; line-height:1.1}
+h1 .p{color:var(--accent)}
+.sub{font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); font-weight:700}
+.headbtns{display:flex; gap:6px; flex:0 0 auto}
+.iconbtn{
+  width:40px; height:40px; border-radius:11px; border:1px solid var(--line);
+  background:var(--surface); color:var(--ink); font-size:17px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow);
+  position:relative; font-family:inherit;
+}
+.iconbtn .dot{
+  position:absolute; top:-4px; right:-4px; min-width:17px; height:17px; padding:0 4px;
+  border-radius:9px; background:var(--accent); color:var(--accent-ink);
+  font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center;
+}
+
+/* --- segmented controls ------------------------------------------- */
+.seg{display:flex; gap:4px; background:var(--surface-2); padding:4px; border-radius:999px; border:1px solid var(--line)}
+.seg button{
+  flex:1; border:0; background:transparent; color:var(--muted); cursor:pointer;
+  font-family:inherit; font-size:13px; font-weight:700; padding:9px 6px; border-radius:999px;
+  min-height:38px; transition:background .15s,color .15s;
+}
+.seg button[aria-pressed="true"]{background:var(--surface); color:var(--ink); box-shadow:var(--shadow)}
+.seg.small button{font-size:12.5px; padding:7px 4px; min-height:34px}
+/* display:flex on .seg outranks the UA [hidden] rule, so restate it */
+.seg[hidden]{display:none}
+
+/* --- status bar --------------------------------------------------- */
+.status{display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:34px}
+.hearts{display:flex; gap:3px; align-items:center}
+.heart{font-size:18px; line-height:1}
+.heart.gone{opacity:.2; filter:grayscale(1)}
+.readout{
+  display:flex; gap:12px; font-variant-numeric:tabular-nums; font-size:13px; color:var(--muted);
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+.readout b{color:var(--ink); font-weight:700}
+
+/* ===================================================================
+   BOARD
+   --cell is written in PIXELS from JS after layout (see sizeBoard()).
+   It must never be a percentage: a percentage inside calc() feeding
+   font-size resolves against the PARENT FONT SIZE, not the container
+   width, which silently renders every cat at about 2px.
+   =================================================================== */
+.boardwrap{position:relative}
+.board{
+  --cell:40px;
+  position:relative; display:block;
+  aspect-ratio:1/1; width:100%;
+  border:3px solid var(--regionline); border-radius:var(--radius); overflow:hidden;
+  background:var(--surface); box-shadow:var(--shadow);
+  touch-action:manipulation; user-select:none; -webkit-user-select:none;
+}
+.cell{
+  /* absolutely placed from JS - see layoutCells() */
+  position:absolute; border:0; padding:0; margin:0; cursor:pointer;
+  overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+  font-size:calc(var(--cell) * .60); line-height:1; font-family:inherit;
+  background-repeat:repeat; outline-offset:-4px;
+  -webkit-touch-callout:none;
+}
+.cell:focus-visible{outline:3px solid var(--accent); z-index:4}
+.cell .cat{display:block; animation:pop .2s ease-out}
+.cell .mark{
+  font-size:calc(var(--cell) * .44); color:var(--ink); opacity:.40; font-weight:800;
+  line-height:1;
+}
+/* rejected placement: greyed cat, red ring and slash, ~900ms */
+.cell.reject{animation:shake .32s}
+.cell .ghost{display:block; filter:grayscale(1); opacity:.55}
+.cell.reject::after{
+  content:""; position:absolute; inset:9%; border:3px solid var(--danger);
+  border-radius:50%; pointer-events:none;
+}
+.cell.reject::before{
+  content:""; position:absolute; left:14%; right:14%; top:50%; height:3px;
+  background:var(--danger); transform:rotate(-45deg); border-radius:2px;
+  pointer-events:none; z-index:2;
+}
+.cell.hintpulse::after{
+  content:""; position:absolute; inset:7%; border:3px dashed var(--accent);
+  border-radius:50%; animation:pulse 1.1s ease-out 3; pointer-events:none;
+}
+.cell.solvepop .cat{animation:solvebounce .5s ease-out}
+/* starter cat: placed for you, already right, cannot be picked up */
+.cell.given{cursor:default}
+.cell.given .cat{animation:none}
+.cell.given::after{
+  content:""; position:absolute; inset:7%; border-radius:50%;
+  border:2px solid var(--regionline); opacity:.38; pointer-events:none;
+}
+.cell.given::before{
+  content:"\1F512"; position:absolute; right:5%; bottom:3%;
+  font-size:calc(var(--cell) * .22); line-height:1; pointer-events:none; opacity:.85;
+}
+/* hint now points before it places */
+.cell.hintpoint::after{
+  content:""; position:absolute; inset:5%; border:3px solid var(--accent);
+  border-radius:50%; animation:pulse 1.1s ease-out infinite alternate; pointer-events:none;
+}
+
+/* Cell contents are sized from the board container itself where the browser
+   supports it, so a stale JS measurement can never shrink or blow up the
+   cats. --cell (written in px by sizeBoard) is the fallback above. */
+/* patterns / high-contrast: texture so regions separate without colour */
+.board.pat .cell[data-g="0"]{background-image:repeating-linear-gradient(45deg,rgba(0,0,0,.13) 0 2px,transparent 2px 7px)}
+.board.pat .cell[data-g="1"]{background-image:repeating-linear-gradient(-45deg,rgba(0,0,0,.13) 0 2px,transparent 2px 7px)}
+.board.pat .cell[data-g="2"]{background-image:repeating-linear-gradient(90deg,rgba(0,0,0,.13) 0 2px,transparent 2px 8px)}
+.board.pat .cell[data-g="3"]{background-image:repeating-linear-gradient(0deg,rgba(0,0,0,.13) 0 2px,transparent 2px 8px)}
+.board.pat .cell[data-g="4"]{background-image:radial-gradient(circle at 3px 3px,rgba(0,0,0,.18) 1.4px,transparent 1.6px);background-size:8px 8px}
+.board.pat .cell[data-g="5"]{background-image:radial-gradient(circle at 4px 4px,rgba(0,0,0,.16) 2.2px,transparent 2.4px);background-size:11px 11px}
+.board.pat .cell[data-g="6"]{background-image:repeating-linear-gradient(45deg,rgba(0,0,0,.14) 0 3px,transparent 3px 11px)}
+.board.pat .cell[data-g="7"]{background-image:repeating-linear-gradient(0deg,rgba(0,0,0,.12) 0 1px,transparent 1px 5px),repeating-linear-gradient(90deg,rgba(0,0,0,.12) 0 1px,transparent 1px 5px)}
+.board.pat .cell[data-g="8"]{background-image:repeating-linear-gradient(-45deg,rgba(0,0,0,.14) 0 3px,transparent 3px 11px)}
+.board.pat .cell[data-g="9"]{background-image:radial-gradient(circle at 5px 5px,rgba(0,0,0,.15) 1.2px,transparent 1.4px);background-size:10px 10px}
+
+
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}60%{transform:translateX(4px)}80%{transform:translateX(-2px)}}
+@keyframes pop{0%{transform:scale(.35)}62%{transform:scale(1.2)}100%{transform:scale(1)}}
+@keyframes pulse{0%{opacity:1}100%{opacity:.12}}
+@keyframes solvebounce{0%{transform:translateY(0)}35%{transform:translateY(-22%) scale(1.14)}100%{transform:translateY(0) scale(1)}}
+@keyframes risein{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes revealcard{0%{opacity:0;transform:scale(.72) rotate(-5deg)}55%{transform:scale(1.06) rotate(1.5deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+
+/* --- overlays over the board -------------------------------------- */
+.overlay{
+  position:absolute; inset:0; display:none; flex-direction:column; gap:12px;
+  align-items:center; justify-content:center; border-radius:var(--radius);
+  background:var(--surface);
+  background:color-mix(in srgb, var(--surface) 92%, transparent);
+  text-align:center; padding:22px; z-index:5;
+}
+.overlay.on{display:flex}
+.overlay h3{margin:0; font-size:18px}
+.overlay p{margin:0; font-size:13.5px; color:var(--muted); max-width:30ch}
+.spinner{
+  width:26px; height:26px; border-radius:50%;
+  border:3px solid var(--line); border-top-color:var(--accent);
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* --- buttons ------------------------------------------------------ */
+.controls{display:grid; grid-template-columns:repeat(5,1fr); gap:6px}
+.controls .btn{padding:11px 3px}
+@media (max-width:360px){ .controls .btn{font-size:12px} }
+.msg .btn{min-height:34px; padding:6px 12px; margin-left:8px; font-size:12.5px; box-shadow:none}
+.btn{
+  font-family:inherit; font-size:13px; font-weight:700; padding:11px 6px; border-radius:11px;
+  border:1px solid var(--line); background:var(--surface); color:var(--ink); cursor:pointer;
+  box-shadow:var(--shadow); min-height:44px; transition:transform .07s;
+}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.38; cursor:default; box-shadow:none}
+.btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+.btn.wide{width:100%}
+
+.msg{
+  min-height:42px; font-size:13.5px; color:var(--muted); display:flex; align-items:center;
+  padding:9px 12px; border-radius:11px; background:var(--surface-2); border:1px solid var(--line);
+}
+.msg b{color:var(--ink)}
+.msg.win{background:var(--accent-soft); border-color:var(--accent); color:var(--ink)}
+.msg.bad{background:var(--danger-soft); border-color:var(--danger); color:var(--ink)}
+
+details.rules{border:1px solid var(--line); border-radius:11px; background:var(--surface); padding:0 12px}
+details.rules summary{
+  cursor:pointer; padding:11px 0; font-size:13px; font-weight:700; list-style:none;
+  display:flex; justify-content:space-between; align-items:center; min-height:42px;
+}
+details.rules summary::-webkit-details-marker{display:none}
+details.rules summary::after{content:"+"; color:var(--muted)}
+details.rules[open] summary::after{content:"\2013"}
+details.rules ol{margin:0 0 12px; padding-left:20px; font-size:13.5px; line-height:1.6; color:var(--muted)}
+details.rules li b{color:var(--ink)}
+details.rules .tip{margin:0 0 12px; font-size:12.5px; color:var(--muted)}
+
+footer{font-size:11.5px; color:var(--muted); text-align:center; line-height:1.65}
+
+/* --- sheets (collection / settings / win) -------------------------- */
+.sheet{
+  position:fixed; inset:0; z-index:40; display:none;
+  background:var(--bg); overflow-y:auto; -webkit-overflow-scrolling:touch;
+  padding:16px 14px calc(30px + env(safe-area-inset-bottom));
+}
+.sheet.on{display:block; animation:risein .22s ease-out}
+.sheetin{max-width:520px; margin:0 auto; display:flex; flex-direction:column; gap:14px}
+.sheethead{display:flex; align-items:center; justify-content:space-between; gap:10px}
+.sheethead h2{margin:0; font-size:19px}
+
+.tally{display:flex; gap:7px; flex-wrap:wrap}
+.pill{
+  font-size:11.5px; font-weight:700; padding:5px 10px; border-radius:999px;
+  background:var(--surface-2); border:1px solid var(--line); color:var(--muted);
+}
+.pill.Common{color:var(--muted)}
+.pill.Uncommon{color:var(--good); border-color:var(--good)}
+.pill.Rare{color:var(--accent); border-color:var(--accent)}
+.pill.Legendary{color:var(--gold); border-color:var(--gold)}
+
+.grid24{display:grid; grid-template-columns:repeat(auto-fill,minmax(84px,1fr)); gap:9px}
+.catcard{
+  border:1px solid var(--line); border-radius:12px; background:var(--surface);
+  padding:9px 6px 8px; text-align:center; cursor:pointer; font-family:inherit;
+  display:flex; flex-direction:column; align-items:center; gap:5px; color:var(--ink);
+  min-height:96px; box-shadow:var(--shadow);
+}
+.catcard .av{
+  width:46px; height:46px; border-radius:13px; display:flex; align-items:center;
+  justify-content:center; font-size:26px; position:relative;
+}
+.catcard .av .badge{
+  position:absolute; right:-5px; bottom:-4px; font-size:13px;
+  background:var(--surface); border-radius:50%; width:20px; height:20px;
+  display:flex; align-items:center; justify-content:center; border:1px solid var(--line);
+}
+.catcard .nm{font-size:11.5px; font-weight:700; line-height:1.2}
+.catcard .rr{font-size:9.5px; letter-spacing:.07em; text-transform:uppercase; font-weight:800; color:var(--muted)}
+.catcard.locked{opacity:.85}
+.catcard.locked .av{background:var(--surface-3)!important}
+/* Emoji are colour glyphs, so a text-shadow silhouette does nothing to them.
+   brightness(0) flattens the glyph to a solid shape instead. */
+.catcard.locked .av .sil{filter:brightness(0) saturate(0); opacity:.28}
+:root[data-theme="dark"] .catcard.locked .av .sil{filter:brightness(0) saturate(0) invert(1); opacity:.34}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .catcard.locked .av .sil{filter:brightness(0) saturate(0) invert(1); opacity:.34}
+}
+.catcard.locked .av .badge{display:none}
+.catcard.locked .nm{color:var(--muted)}
+.catcard .visits{font-size:9.5px; color:var(--muted)}
+.rr.Common{color:var(--muted)} .rr.Uncommon{color:var(--good)}
+.rr.Rare{color:var(--accent)} .rr.Legendary{color:var(--gold)}
+
+.row{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 0; border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .lab{font-size:13.5px; font-weight:600}
+.row .hint{font-size:11.5px; color:var(--muted); font-weight:400; display:block; margin-top:2px}
+.card{border:1px solid var(--line); border-radius:12px; background:var(--surface); padding:4px 13px; box-shadow:var(--shadow)}
+.card h3{font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); margin:13px 0 2px}
+
+/* accessible switch */
+.sw{position:relative; width:48px; height:28px; flex:0 0 auto; border:0; padding:0; background:transparent; cursor:pointer}
+.sw i{position:absolute; inset:0; border-radius:999px; background:var(--surface-3); border:1px solid var(--line); transition:background .16s}
+.sw i::after{content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:var(--surface); box-shadow:var(--shadow); transition:transform .16s}
+.sw[aria-checked="true"] i{background:var(--accent)}
+.sw[aria-checked="true"] i::after{transform:translateX(20px)}
+.sw:focus-visible i{outline:2px solid var(--accent); outline-offset:2px}
+
+.statgrid{display:grid; grid-template-columns:repeat(2,1fr); gap:9px}
+.stat{border:1px solid var(--line); border-radius:11px; background:var(--surface); padding:10px 12px}
+.stat .k{font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:700}
+.stat .v{font-size:19px; font-weight:800; font-variant-numeric:tabular-nums}
+
+textarea{
+  width:100%; min-height:110px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:11.5px; padding:9px; border-radius:10px; border:1px solid var(--line);
+  background:var(--surface-2); color:var(--ink); resize:vertical;
+}
+
+/* --- win / reveal -------------------------------------------------- */
+.reveal{
+  position:fixed; inset:0; z-index:60; display:none; align-items:center; justify-content:center;
+  background:var(--bg);
+  background:color-mix(in srgb, var(--bg) 86%, transparent); padding:22px; text-align:center;
+}
+.reveal.on{display:flex}
+.revealcard{
+  background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:24px 22px;
+  box-shadow:var(--shadow); max-width:320px; width:100%; animation:revealcard .5s cubic-bezier(.2,1.3,.4,1);
+  display:flex; flex-direction:column; align-items:center; gap:9px;
+}
+.revealcard .av{width:84px; height:84px; border-radius:22px; display:flex; align-items:center; justify-content:center; font-size:46px; position:relative}
+.revealcard .av .badge{position:absolute; right:-6px; bottom:-6px; font-size:21px; background:var(--surface); border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border:1px solid var(--line)}
+.revealcard h3{margin:0; font-size:22px}
+.revealcard .rr{font-size:11px; letter-spacing:.1em; text-transform:uppercase; font-weight:800}
+.revealcard p{margin:0; font-size:13.5px; color:var(--muted)}
+.revealcard .tap{font-size:11px; color:var(--muted); margin-top:5px}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important; animation-iteration-count:1!important; transition-duration:.001ms!important}
+}
+
+/* --- test mode ----------------------------------------------------- */
+#testout{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px;
+  white-space:pre-wrap; padding:14px; max-width:760px; margin:0 auto; line-height:1.55;
+}
+.ok{color:var(--good); font-weight:700} .bad{color:var(--danger); font-weight:700}
+</style>
+</head><body>
+<div class="wrap" id="app">
+  <header>
+    <div class="brand">
+      <h1>Windowsill <span class="p">Cats</span></h1>
+      <div class="sub" id="ctxLabel">Level 1 &middot; 6&times;6</div>
+    </div>
+    <div class="headbtns">
+      <button class="iconbtn" id="openCats" aria-label="Cat collection">&#128062;<span class="dot" id="catDot">0</span></button>
+      <button class="iconbtn" id="openSet" aria-label="Settings">&#9881;</button>
+    </div>
+  </header>
+
+  <div class="seg" role="group" aria-label="Game mode">
+    <button data-mode="levels" aria-pressed="true">Levels</button>
+    <button data-mode="daily" aria-pressed="false">Daily</button>
+    <button data-mode="free" aria-pressed="false">Free play</button>
+  </div>
+
+  <div class="seg small" id="diffPick" role="group" aria-label="Difficulty">
+    <button data-diff="normal" aria-pressed="true">Normal</button>
+    <button data-diff="hard" aria-pressed="false">Hard</button>
+    <button data-diff="expert" aria-pressed="false">Expert</button>
+  </div>
+
+  <div class="seg small" id="sizePick" role="group" aria-label="Board size" hidden>
+    <button data-size="6" aria-pressed="true">6&times;6</button>
+    <button data-size="7" aria-pressed="false">7&times;7</button>
+    <button data-size="8" aria-pressed="false">8&times;8</button>
+    <button data-size="9" aria-pressed="false">9&times;9</button>
+    <button data-size="10" aria-pressed="false">10&times;10</button>
+  </div>
+
+  <div class="status">
+    <div class="hearts" id="hearts" aria-label="Hearts remaining" aria-live="polite"></div>
+    <div class="readout">
+      <span>time <b id="timer">0:00</b></span>
+      <span id="bestWrap">best <b id="best">&mdash;</b></span>
+    </div>
+  </div>
+
+  <div class="boardwrap">
+    <div class="board" id="board" style="--n:6" role="grid" aria-label="Puzzle board"></div>
+    <div class="overlay" id="overlay">
+      <div class="spinner"></div>
+      <h3 id="ovTitle">Waking the cats&hellip;</h3>
+      <p id="ovText"></p>
+      <div id="ovBtns" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"></div>
+    </div>
+  </div>
+
+  <div class="msg" id="msg" aria-live="polite">Tap once for &times;, twice to sit a cat there.</div>
+
+  <div class="controls">
+    <button class="btn" id="undo" disabled>Undo</button>
+    <button class="btn" id="redo" disabled>Redo</button>
+    <button class="btn" id="restart">Restart</button>
+    <button class="btn" id="hint">Hint</button>
+    <button class="btn primary" id="newBtn">New</button>
+  </div>
+
+  <details class="rules">
+    <summary>How it works</summary>
+    <ol>
+      <li>One cat in <b>every row</b>.</li>
+      <li>One cat in <b>every column</b>.</li>
+      <li>One cat in <b>every coloured patch</b>.</li>
+      <li>Cats <b>never touch</b>, not even at the corners.</li>
+    </ol>
+    <p class="tip">Start from the <b>starter cat</b> with the lock. It is already in the right spot, so it rules out its whole row, column, patch and every square touching it.</p>
+    <p class="tip">Tap once to mark a square with &times; &mdash; that is just your own note, it costs nothing. Tap twice on the same square to sit a cat there. Tap a cat to pick it back up. A cat in the wrong square costs a heart. Lose all three and the board is lost: try it again or take a new one.</p>
+    <p class="tip"><b>Hint</b> points at the next square you can work out and tells you why. Tap it again to sit the cat there.</p>
+    <p class="tip"><b>Difficulty:</b> Normal gives you extra starter cats, Hard gives you one, Expert gives you none.</p>
+    <p class="tip"><b>Bonus boards</b> show up after every fourth level. One heart, no hints, and a rarer cat if you clear it. Always optional, and they never block your next level.</p>
+  </details>
+
+  <footer>
+    Every puzzle is generated fresh and has exactly one solution.<br>
+    No ads, no lives to buy. Plays offline.<br>
+    <span style="opacity:.6">build 10</span>
+  </footer>
+</div>
+
+<!-- ============================ COLLECTION ============================ -->
+<div class="sheet" id="catsSheet" role="dialog" aria-modal="true" aria-label="Cat collection">
+  <div class="sheetin">
+    <div class="sheethead">
+      <h2>The cats</h2>
+      <button class="btn" id="closeCats">Done</button>
+    </div>
+    <div class="tally" id="tally"></div>
+    <div class="grid24" id="catGrid"></div>
+    <div class="card" id="catDetail" hidden></div>
+  </div>
+</div>
+
+<!-- ============================= SETTINGS ============================= -->
+<div class="sheet" id="setSheet" role="dialog" aria-modal="true" aria-label="Settings">
+  <div class="sheetin">
+    <div class="sheethead">
+      <h2>Settings</h2>
+      <button class="btn" id="closeSet">Done</button>
+    </div>
+
+    <div class="card">
+      <h3>Play</h3>
+      <div class="row">
+        <div class="lab">Single tap places a cat
+          <span class="hint">Off: tap once for &times;, twice for a cat. On: tap once for a cat, twice for &times;. Faster, but a mis-tap costs a heart straight away.</span>
+        </div>
+        <button class="sw" id="swInvert" role="switch" aria-checked="false"><i></i></button>
+      </div>
+      <div class="row">
+        <div class="lab">Forgiving hearts
+          <span class="hint">Off: run out of hearts and the board is lost, so you start it over. On: hearts refill for free and you keep your progress.</span>
+        </div>
+        <button class="sw" id="swForgive" role="switch" aria-checked="false"><i></i></button>
+      </div>
+      <div class="row">
+        <div class="lab">Sound
+          <span class="hint">Short tones, generated on the fly. Starts off.</span>
+        </div>
+        <button class="sw" id="swSound" role="switch" aria-checked="false"><i></i></button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Look</h3>
+      <div class="row">
+        <div class="lab">Theme</div>
+        <div class="seg small" id="themePick" style="flex:1;max-width:230px">
+          <button data-theme="auto" aria-pressed="true">Auto</button>
+          <button data-theme="light" aria-pressed="false">Light</button>
+          <button data-theme="dark" aria-pressed="false">Dark</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="lab">Patterns on patches
+          <span class="hint">Adds texture so patches separate without relying on colour.</span>
+        </div>
+        <button class="sw" id="swPat" role="switch" aria-checked="false"><i></i></button>
+      </div>
+      <div class="row" style="display:block">
+        <div class="lab" style="margin-bottom:8px">Board palette
+          <span class="hint" id="palHint"></span>
+        </div>
+        <div class="seg small" id="palPick"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Record</h3>
+      <div class="statgrid" id="statGrid"></div>
+    </div>
+
+    <div class="card">
+      <h3>Backup</h3>
+      <div class="row" style="display:block">
+        <div class="lab" style="margin-bottom:8px">Everything &mdash; cats, stats, level, streaks
+          <span class="hint">Copy this out before you clear your browser or switch phones. Paste it back and press Import.</span>
+        </div>
+        <textarea id="backup" spellcheck="false" aria-label="Save data"></textarea>
+        <div style="display:flex;gap:7px;margin:9px 0 4px">
+          <button class="btn" id="doExport" style="flex:1">Export</button>
+          <button class="btn" id="doCopy" style="flex:1">Copy</button>
+          <button class="btn" id="doImport" style="flex:1">Import</button>
+        </div>
+      </div>
+      <div class="row" style="display:block">
+        <button class="btn wide" id="doReset" style="color:var(--danger)">Erase everything</button>
+      </div>
+    </div>
+
+    <footer>Windowsill Cats. No ads, no analytics, no network. Your save never leaves this device.</footer>
+  </div>
+</div>
+
+<!-- ============================== REVEAL ============================== -->
+<div class="reveal" id="reveal"><div class="revealcard" id="revealCard"></div></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ==== PUZZLE CORE START ==== */
+/* =========================================================================
+   WINDOWSILL CATS - PUZZLE CORE
+   Pure functions: PRNG, solution generator, region grower, uniqueness
+   checker, human-style solver (difficulty rating + hints).
+
+   No DOM access anywhere in this block. It is inlined verbatim into
+   index.html between the CORE START / CORE END markers, and extracted by
+   test-node.js so the tests run against the exact shipped code.
+   ========================================================================= */
+
+/* ---- randomness -------------------------------------------------------
+   Every random choice routes through an injected rnd() so the Daily puzzle
+   can be reproduced exactly from a date seed. Math.random is only ever the
+   default for Levels / Free play.                                        */
+
+function mulberry32(seed){
+  let a = seed >>> 0;
+  return function(){
+    a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Stable 32-bit hash of a string, used to turn "2026-09-01" into a seed.
+function hashSeed(str){
+  let h = 2166136261 >>> 0;
+  for(let i = 0; i < str.length; i++){
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function shuffle(arr, rnd){
+  for(let i = arr.length - 1; i > 0; i--){
+    const j = Math.floor(rnd() * (i + 1));
+    const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+  }
+  return arr;
+}
+
+var ORTHO = [[1,0],[-1,0],[0,1],[0,-1]];
+
+/* ---- STEP 1: the solution ---------------------------------------------
+   Randomized backtracking placing one cat per row. Because rows are filled
+   in order and no two cats may touch even diagonally, the only adjacency
+   that can be violated is against the previous row -- hence the single
+   |prev - c| < 2 test. Column reuse is blocked by `used`.
+
+   N=6 is the tight case: valid placements exist but are scarce, so the
+   backtracker really does need to unwind. It always terminates because the
+   search space is finite and every branch is tried.                      */
+
+function makeSolution(N, rnd){
+  var cols = new Int32Array(N).fill(-1);
+  var used = new Uint8Array(N);
+  var idx = [];
+  for(var i = 0; i < N; i++) idx.push(i);
+
+  function rec(r){
+    if(r === N) return true;
+    var order = shuffle(idx.slice(), rnd);
+    for(var k = 0; k < order.length; k++){
+      var c = order[k];
+      if(used[c]) continue;
+      if(r > 0 && Math.abs(cols[r-1] - c) < 2) continue;   // vertical/diagonal touch
+      used[c] = 1; cols[r] = c;
+      if(rec(r + 1)) return true;
+      used[c] = 0; cols[r] = -1;
+    }
+    return false;
+  }
+  return rec(0) ? Array.from(cols) : null;
+}
+
+/* ---- STEP 3: uniqueness check -----------------------------------------
+   Depth-first, row by row, bitmasks for used columns and used regions.
+
+   Cells whose region is -1 (still unassigned) are skipped: an unassigned
+   cell cannot hold a cat. That is the property the whole generator leans
+   on -- assigning more cells can only ADD solutions, never remove them --
+   so uniqueness is something we protect while building rather than test
+   at the end.
+
+   Returns the first complete placement that differs from `cols`, or null.
+   Typically well under a millisecond.                                    */
+
+function findAlternate(N, region, cols){
+  var st = new Int32Array(N);
+  var found = null;
+
+  function rec(r, colMask, regMask){
+    if(found) return;
+    if(r === N){
+      for(var i = 0; i < N; i++){
+        if(st[i] !== cols[i]){ found = Array.from(st); return; }
+      }
+      return;                                   // identical to the known solution
+    }
+    var prev = r > 0 ? st[r-1] : -99;
+    var rowOff = r * N;
+    for(var c = 0; c < N; c++){
+      if(colMask & (1 << c)) continue;
+      if(c >= prev - 1 && c <= prev + 1) continue;
+      var g = region[rowOff + c];
+      if(g < 0 || (regMask & (1 << g))) continue;
+      st[r] = c;
+      rec(r + 1, colMask | (1 << c), regMask | (1 << g));
+      if(found) return;
+    }
+  }
+  rec(0, 0, 0);
+  return found;
+}
+
+/* ---- STEP 2: grow the regions -----------------------------------------
+   Seed each region with its own cat cell, then flood outward one cell at a
+   time. Growing only into cells orthogonally adjacent to an existing region
+   gives contiguity for free, and cat cells never move, so every region
+   permanently contains exactly one cat.
+
+   Each tentative assignment is immediately tested with findAlternate. If a
+   second solution appears we revert and try the next adjacent region.
+
+   SMALL_BIAS controls how strongly growth favours the smaller regions.
+   Raise it toward 1 for more even region sizes, lower it for lumpier maps. */
+
+var SMALL_BIAS = 0.6;
+
+function growRegions(N, cols, rnd){
+  var region = new Int8Array(N * N).fill(-1);
+  var size = new Int32Array(N).fill(1);
+  for(var r0 = 0; r0 < N; r0++) region[r0 * N + cols[r0]] = r0;
+
+  var remaining = N * N - N;
+  var guard = 0;
+
+  while(remaining > 0){
+    if(guard++ > N * N * 8) return null;         // pathological, restart
+
+    // --- frontier: unassigned cells with >=1 assigned orthogonal neighbour,
+    //     tagged with how many DISTINCT regions each one touches.
+    var pool = [], key = [];
+    for(var r = 0; r < N; r++){
+      for(var c = 0; c < N; c++){
+        var i = r * N + c;
+        if(region[i] !== -1) continue;
+        var mask = 0, touching = 0;
+        for(var d = 0; d < 4; d++){
+          var nr = r + ORTHO[d][0], nc = c + ORTHO[d][1];
+          if(nr < 0 || nr >= N || nc < 0 || nc >= N) continue;
+          var g = region[nr * N + nc];
+          if(g >= 0 && !(mask & (1 << g))){ mask |= (1 << g); touching++; }
+        }
+        if(touching > 0){ pool.push(i); key.push(touching); }
+      }
+    }
+    if(!pool.length) return null;
+
+    // most-constrained-first, random tiebreak so the map is not deterministic
+    var order = [];
+    for(var q = 0; q < pool.length; q++) order.push(q);
+    shuffle(order, rnd);
+    order.sort(function(a, b){ return key[a] - key[b]; });
+
+    var any = false;
+    for(var k = 0; k < order.length; k++){
+      var idx = pool[order[k]];
+      if(region[idx] !== -1) continue;           // claimed earlier this pass
+      var cr = (idx / N) | 0, cc = idx % N;
+
+      var cand = [];
+      for(var d2 = 0; d2 < 4; d2++){
+        var nr2 = cr + ORTHO[d2][0], nc2 = cc + ORTHO[d2][1];
+        if(nr2 < 0 || nr2 >= N || nc2 < 0 || nc2 >= N) continue;
+        var g2 = region[nr2 * N + nc2];
+        if(g2 >= 0 && cand.indexOf(g2) < 0) cand.push(g2);
+      }
+      shuffle(cand, rnd);
+      if(rnd() < SMALL_BIAS) cand.sort(function(a, b){ return size[a] - size[b]; });
+
+      for(var m = 0; m < cand.length; m++){
+        var gg = cand[m];
+        region[idx] = gg;
+        if(!findAlternate(N, region, cols)){     // still unique -> keep it
+          size[gg]++; remaining--; any = true; break;
+        }
+        region[idx] = -1;                        // opened a 2nd solution, revert
+      }
+      // if no region worked, leave the cell for the next pass
+    }
+    if(!any) return null;                        // a full pass assigned nothing
+  }
+  return region;
+}
+
+/* ---- assemble ---------------------------------------------------------- */
+
+function generate(N, rnd){
+  rnd = rnd || Math.random;
+  for(var attempt = 0; attempt < 400; attempt++){
+    var cols = makeSolution(N, rnd);
+    if(!cols) continue;
+    var region = growRegions(N, cols, rnd);
+    if(region){
+      var puz = { N: N, cols: cols, region: Array.from(region) };
+      var rating = rate(puz);
+      puz.difficulty = rating.difficulty;
+      puz.depth = rating.depth;
+      return puz;
+    }
+  }
+  return null;
+}
+
+/* =========================================================================
+   HUMAN-STYLE SOLVER
+   Drives both the difficulty rating and the hint system. It never looks at
+   puz.cols -- it reasons only from the region map and the cats already on
+   the board, so a hint is always something the player could have deduced.
+
+   State: cand[i] is 1 while cell i is still a possible cat.
+          cat[i]  is 1 once a cat is committed.
+
+   Techniques, applied in order, cheapest first:
+     1 SINGLE     a row / column / region with exactly one candidate left
+     2 ADJACENCY  eliminate row, column, region and 8 neighbours of a cat
+     3 CONFINED   a region confined to one row (or column) clears the rest
+                  of that row (or column); and the mirror case, a row whose
+                  candidates all sit in one region clears the rest of that
+                  region
+
+   Anything needing more than these counts as "deeper chaining".
+   ========================================================================= */
+
+var TECH_SINGLE = 1, TECH_ADJACENCY = 2, TECH_CONFINED = 3, TECH_LOOKAHEAD = 4;
+
+function newSolveState(N, region){
+  return {
+    N: N,
+    region: region,
+    cand: new Uint8Array(N * N).fill(1),
+    cat: new Uint8Array(N * N),
+    placed: 0
+  };
+}
+
+// Commit a cat and run technique-2 elimination outward from it.
+function placeCat(S, i){
+  var N = S.N, r = (i / N) | 0, c = i % N, g = S.region[i];
+  S.cat[i] = 1; S.cand[i] = 0; S.placed++;
+  for(var k = 0; k < N; k++){
+    S.cand[r * N + k] = 0;                       // row
+    S.cand[k * N + c] = 0;                       // column
+  }
+  for(var j = 0; j < N * N; j++){
+    if(S.region[j] === g) S.cand[j] = 0;         // region
+  }
+  for(var dr = -1; dr <= 1; dr++){
+    for(var dc = -1; dc <= 1; dc++){
+      var nr = r + dr, nc = c + dc;
+      if(nr < 0 || nr >= N || nc < 0 || nc >= N) continue;
+      S.cand[nr * N + nc] = 0;                   // 8-neighbourhood
+    }
+  }
+}
+
+// Group the live candidates by row, column and region.
+function buckets(S){
+  var N = S.N;
+  var byRow = [], byCol = [], byReg = [];
+  for(var k = 0; k < N; k++){ byRow.push([]); byCol.push([]); byReg.push([]); }
+  for(var i = 0; i < N * N; i++){
+    if(!S.cand[i]) continue;
+    byRow[(i / N) | 0].push(i);
+    byCol[i % N].push(i);
+    byReg[S.region[i]].push(i);
+  }
+  return { byRow: byRow, byCol: byCol, byReg: byReg };
+}
+
+// Which units already hold a cat?
+function satisfied(S){
+  var N = S.N;
+  var row = new Uint8Array(N), col = new Uint8Array(N), reg = new Uint8Array(N);
+  for(var i = 0; i < N * N; i++){
+    if(!S.cat[i]) continue;
+    row[(i / N) | 0] = 1; col[i % N] = 1; reg[S.region[i]] = 1;
+  }
+  return { row: row, col: col, reg: reg };
+}
+
+/* One deduction step. Returns:
+     {kind:"place", i, tech, why}   place a cat, with a human explanation
+     {kind:"cut", cells, tech, why} eliminate candidates (technique 3 only)
+     null                           nothing forced with these techniques   */
+function nextDeduction(S, maxTech){
+  if(maxTech === undefined) maxTech = TECH_CONFINED;
+  var N = S.N;
+  var B = buckets(S), sat = satisfied(S);
+  var g, r, c, k, cells, cut, j;
+
+  // --- technique 1: naked singles. Regions first, they read most naturally.
+  for(g = 0; g < N; g++){
+    if(sat.reg[g]) continue;
+    if(B.byReg[g].length === 1){
+      return { kind:"place", i:B.byReg[g][0], tech:TECH_SINGLE,
+        why:"that patch has only one square left that does not clash with a cat you already placed" };
+    }
+  }
+  for(r = 0; r < N; r++){
+    if(sat.row[r]) continue;
+    if(B.byRow[r].length === 1){
+      return { kind:"place", i:B.byRow[r][0], tech:TECH_SINGLE,
+        why:"row " + (r + 1) + " has exactly one square left that no cat is touching" };
+    }
+  }
+  for(c = 0; c < N; c++){
+    if(sat.col[c]) continue;
+    if(B.byCol[c].length === 1){
+      return { kind:"place", i:B.byCol[c][0], tech:TECH_SINGLE,
+        why:"column " + (c + 1) + " has exactly one square left that no cat is touching" };
+    }
+  }
+
+  // --- technique 2: elimination from adjacency.
+  //
+  // Every unsatisfied unit (region, row or column) is guaranteed to hold a
+  // cat somewhere in its candidate set C. So any cell that is diagonally or
+  // orthogonally adjacent to EVERY cell of C is dead: wherever that unit's
+  // cat lands, this cell would be touching it.
+  //
+  // A cell that qualifies must be adjacent to C[0], so we only ever test
+  // C[0]'s eight neighbours - that keeps this to ~9*|C| per unit.
+  var units = [];
+  for(g = 0; g < N; g++) if(!sat.reg[g] && B.byReg[g].length) units.push(B.byReg[g]);
+  for(r = 0; r < N; r++) if(!sat.row[r] && B.byRow[r].length) units.push(B.byRow[r]);
+  for(c = 0; c < N; c++) if(!sat.col[c] && B.byCol[c].length) units.push(B.byCol[c]);
+
+  for(var u = 0; u < units.length; u++){
+    cells = units[u];
+    if(cells.length < 2) continue;               // length 1 is technique 1
+    var br = (cells[0] / N) | 0, bc = cells[0] % N;
+    cut = [];
+    for(var dr2 = -1; dr2 <= 1; dr2++){
+      for(var dc2 = -1; dc2 <= 1; dc2++){
+        if(!dr2 && !dc2) continue;
+        var xr = br + dr2, xc = bc + dc2;
+        if(xr < 0 || xr >= N || xc < 0 || xc >= N) continue;
+        var x = xr * N + xc;
+        if(!S.cand[x]) continue;
+        var all = true;
+        for(k = 0; k < cells.length; k++){
+          var yr = (cells[k] / N) | 0, yc = cells[k] % N;
+          // adjacent, and not the cell itself
+          if(cells[k] === x || Math.abs(yr - xr) > 1 || Math.abs(yc - xc) > 1){ all = false; break; }
+        }
+        if(all) cut.push(x);
+      }
+    }
+    if(cut.length) return { kind:"cut", cells:cut, tech:TECH_ADJACENCY,
+      why:"wherever that group's cat ends up, it would be touching this square" };
+  }
+
+  if(maxTech < TECH_CONFINED) return null;
+
+  // --- technique 3: a region confined to a single row or column
+  for(g = 0; g < N; g++){
+    if(sat.reg[g]) continue;
+    cells = B.byReg[g];
+    if(cells.length < 2) continue;
+
+    var sameRow = true, sameCol = true;
+    var rr = (cells[0] / N) | 0, cc = cells[0] % N;
+    for(k = 1; k < cells.length; k++){
+      if(((cells[k] / N) | 0) !== rr) sameRow = false;
+      if((cells[k] % N) !== cc) sameCol = false;
+    }
+    if(sameRow){
+      cut = [];
+      for(c = 0; c < N; c++){
+        j = rr * N + c;
+        if(S.cand[j] && S.region[j] !== g) cut.push(j);
+      }
+      if(cut.length) return { kind:"cut", cells:cut, tech:TECH_CONFINED,
+        why:"that patch can only sit in row " + (rr + 1) + ", so nothing else in row " + (rr + 1) + " can hold a cat" };
+    }
+    if(sameCol){
+      cut = [];
+      for(r = 0; r < N; r++){
+        j = r * N + cc;
+        if(S.cand[j] && S.region[j] !== g) cut.push(j);
+      }
+      if(cut.length) return { kind:"cut", cells:cut, tech:TECH_CONFINED,
+        why:"that patch can only sit in column " + (cc + 1) + ", so nothing else in column " + (cc + 1) + " can hold a cat" };
+    }
+  }
+
+  // --- technique 3 (mirror): a row/column whose candidates all lie in one region
+  for(r = 0; r < N; r++){
+    if(sat.row[r]) continue;
+    cells = B.byRow[r];
+    if(cells.length < 2) continue;
+    g = S.region[cells[0]];
+    var same = true;
+    for(k = 1; k < cells.length; k++) if(S.region[cells[k]] !== g){ same = false; break; }
+    if(!same) continue;
+    cut = [];
+    for(j = 0; j < N * N; j++){
+      if(S.cand[j] && S.region[j] === g && ((j / N) | 0) !== r) cut.push(j);
+    }
+    if(cut.length) return { kind:"cut", cells:cut, tech:TECH_CONFINED,
+      why:"row " + (r + 1) + " can only be filled from that one patch, so the rest of the patch is out" };
+  }
+  for(c = 0; c < N; c++){
+    if(sat.col[c]) continue;
+    cells = B.byCol[c];
+    if(cells.length < 2) continue;
+    g = S.region[cells[0]];
+    var same2 = true;
+    for(k = 1; k < cells.length; k++) if(S.region[cells[k]] !== g){ same2 = false; break; }
+    if(!same2) continue;
+    cut = [];
+    for(j = 0; j < N * N; j++){
+      if(S.cand[j] && S.region[j] === g && (j % N) !== c) cut.push(j);
+    }
+    if(cut.length) return { kind:"cut", cells:cut, tech:TECH_CONFINED,
+      why:"column " + (c + 1) + " can only be filled from that one patch, so the rest of the patch is out" };
+  }
+
+  // --- technique 3, general form: pigeonhole confinement over SETS.
+  //
+  // If k units of one family (say 3 patches) have all their candidates
+  // inside exactly k units of another family (say 3 rows), those k rows are
+  // spoken for - one cat each, all supplied by those patches. Every other
+  // candidate in those rows is dead.
+  //
+  // k=1 is the plain "patch confined to one row" case handled above; this
+  // covers k=2 and k=3, which is where most real boards actually open up.
+  var fam = [
+    { units: B.byReg, sat: sat.reg, of: function(i){ return S.region[i]; }, name: "patch" },
+    { units: B.byRow, sat: sat.row, of: function(i){ return (i / N) | 0; }, name: "row" },
+    { units: B.byCol, sat: sat.col, of: function(i){ return i % N; },       name: "column" }
+  ];
+  for(var a = 0; a < 3; a++){
+    for(var b = 0; b < 3; b++){
+      if(a === b) continue;
+      var res = confineSets(S, fam[a], fam[b]);
+      if(res) return res;
+    }
+  }
+
+  if(maxTech < TECH_LOOKAHEAD) return null;
+
+  // --- technique 4: one-ply look-ahead.
+  //
+  // "If the cat went there, that patch would have nowhere left." Try each
+  // remaining candidate, propagate it, and if some other unit is left with
+  // no candidates at all, that square is impossible.
+  //
+  // This is the deepest thing the solver does, and needing it is what marks
+  // a board Hard. It exists mainly so the Hint button still has something
+  // true to say on a hard board.
+  var dead = [];
+  for(var xi = 0; xi < N * N; xi++){
+    if(S.cand[xi] && orphansAUnit(S, xi, sat)) dead.push(xi);
+  }
+  if(dead.length) return { kind:"cut", cells:dead, tech:TECH_LOOKAHEAD,
+    why:"put a cat there and some row, column or patch is left with nowhere to go" };
+
+  return null;
+}
+
+/* Would committing a cat at cell x strand some other unit with zero
+   candidates? Used by technique 4. Does not mutate S. */
+function orphansAUnit(S, x, sat){
+  var N = S.N, r = (x / N) | 0, c = x % N, g = S.region[x];
+  var cand = S.cand.slice();
+
+  // propagate exactly as placeCat would
+  for(var k = 0; k < N; k++){ cand[r * N + k] = 0; cand[k * N + c] = 0; }
+  for(var j = 0; j < N * N; j++) if(S.region[j] === g) cand[j] = 0;
+  for(var dr = -1; dr <= 1; dr++){
+    for(var dc = -1; dc <= 1; dc++){
+      var nr = r + dr, nc = c + dc;
+      if(nr < 0 || nr >= N || nc < 0 || nc >= N) continue;
+      cand[nr * N + nc] = 0;
+    }
+  }
+
+  var rowN = new Int32Array(N), colN = new Int32Array(N), regN = new Int32Array(N);
+  for(var i = 0; i < N * N; i++){
+    if(!cand[i]) continue;
+    rowN[(i / N) | 0]++; colN[i % N]++; regN[S.region[i]]++;
+  }
+  for(var u = 0; u < N; u++){
+    if(!sat.row[u] && u !== r && rowN[u] === 0) return true;
+    if(!sat.col[u] && u !== c && colN[u] === 0) return true;
+    if(!sat.reg[u] && u !== g && regN[u] === 0) return true;
+  }
+  return false;
+}
+
+/* Pigeonhole confinement between two unit families, for set sizes 2 and 3.
+   Returns a {kind:"cut"} move or null. See technique 3 above. */
+function confineSets(S, A, B2){
+  var N = S.N;
+  var ids = [], masks = [];
+  for(var i = 0; i < N; i++){
+    if(A.sat[i]) continue;
+    var cells = A.units[i];
+    if(!cells.length) continue;
+    var m = 0;
+    for(var k = 0; k < cells.length; k++) m |= (1 << B2.of(cells[k]));
+    ids.push(i); masks.push(m);
+  }
+  var n = ids.length;
+
+  function popcount(m){ var c = 0; while(m){ m &= m - 1; c++; } return c; }
+
+  // Build the elimination for a subset whose combined B-mask is `mask`
+  // covering exactly k B-units. Returns a move, or null if nothing is cut.
+  function emit(mask, members){
+    var inSet = new Uint8Array(N * N);
+    for(var q = 0; q < members.length; q++){
+      var cells = A.units[members[q]];
+      for(var w = 0; w < cells.length; w++) inSet[cells[w]] = 1;
+    }
+    var cut = [];
+    for(var i = 0; i < N * N; i++){
+      if(!S.cand[i] || inSet[i]) continue;
+      if(mask & (1 << B2.of(i))) cut.push(i);
+    }
+    if(!cut.length) return null;
+
+    var labels = [];
+    for(var t = 0; t < N; t++) if(mask & (1 << t)) labels.push(B2.name === "patch" ? "one patch" : B2.name + " " + (t + 1));
+    var what = members.length + " " + A.name + (members.length > 1 ? "es" : "");
+    if(A.name === "row") what = members.length + " rows";
+    if(A.name === "column") what = members.length + " columns";
+    if(A.name === "patch") what = members.length + " patches";
+
+    return { kind:"cut", cells:cut, tech:TECH_CONFINED,
+      why: what + " have to share " + labels.join(" and ") + " between them, so nothing else there can hold a cat" };
+  }
+
+  // k = 2, then k = 3; smaller sets are the ones a person actually spots
+  for(var x = 0; x < n; x++){
+    for(var y = x + 1; y < n; y++){
+      var m2 = masks[x] | masks[y];
+      if(popcount(m2) !== 2) continue;
+      var r2 = emit(m2, [ids[x], ids[y]]);
+      if(r2) return r2;
+    }
+  }
+  for(var p = 0; p < n; p++){
+    for(var q2 = p + 1; q2 < n; q2++){
+      var m12 = masks[p] | masks[q2];
+      if(popcount(m12) > 3) continue;
+      for(var z = q2 + 1; z < n; z++){
+        var m3 = m12 | masks[z];
+        if(popcount(m3) !== 3) continue;
+        var r3 = emit(m3, [ids[p], ids[q2], ids[z]]);
+        if(r3) return r3;
+      }
+    }
+  }
+  return null;
+}
+
+/* Run the human solver to exhaustion.
+   Returns { solved, depth, placed, earlyForced }
+     depth       deepest technique index the solver had to reach
+     earlyForced how many cats fall out before the first non-trivial step -
+                 a puzzle that gives you almost nothing to start with plays
+                 hard even when the techniques it uses are shallow         */
+function humanSolve(N, region, maxTech, givens){
+  var S = newSolveState(N, region);
+  var depth = 0, steps = 0, earlyForced = -1;
+  givens = givens || [];
+  for(var gi = 0; gi < givens.length; gi++) placeCat(S, givens[gi]);
+
+  while(S.placed < N){
+    var move = nextDeduction(S, maxTech);
+    if(!move){ if(earlyForced < 0) earlyForced = S.placed; break; }
+    if(move.tech > depth) depth = move.tech;
+    if(move.kind === "place"){
+      placeCat(S, move.i);
+    } else {
+      // mark how far we got on techniques 1-2 alone
+      if(move.tech >= TECH_CONFINED && earlyForced < 0) earlyForced = S.placed;
+      for(var k = 0; k < move.cells.length; k++) S.cand[move.cells[k]] = 0;
+    }
+    if(++steps > N * N * 12) break;              // belt and braces
+  }
+  if(earlyForced < 0) earlyForced = S.placed;
+  return { solved: S.placed === N, depth: depth, placed: S.placed - givens.length,
+           earlyForced: earlyForced - givens.length };
+}
+
+/* ---- STEP 4: difficulty ------------------------------------------------
+   Easy    finished on techniques 1-2 alone
+   Medium  needed technique 3 (confinement)
+   Hard    the human solver stalled entirely - deeper chaining required -
+           or it finished but techniques 1-2 alone could not place a single
+           cat, so the board gives the player nothing to grab onto
+
+   TUNING
+     SHALLOW_MIN   raise it to push more boards into Hard. At 1, a board is
+                   only demoted to Hard when techniques 1-2 place NO cats.
+                   At 2 you also demote boards that only yield one.
+     To make Hard rarer instead, lower it to 0 (never demote on openings).
+   ------------------------------------------------------------------------ */
+
+var SHALLOW_MIN = 1;
+
+function rate(puz, givens){
+  var full = humanSolve(puz.N, puz.region, undefined, givens);
+  // how far the two cheapest techniques get on their own
+  var shallow = humanSolve(puz.N, puz.region, TECH_ADJACENCY, givens);
+
+  var difficulty;
+  if(!full.solved) difficulty = "Hard";              // beyond even look-ahead
+  else if(full.depth >= TECH_LOOKAHEAD) difficulty = "Hard";
+  else if(full.depth < TECH_CONFINED) difficulty = "Easy";
+  else if(shallow.placed < SHALLOW_MIN) difficulty = "Hard";
+  else difficulty = "Medium";
+
+  return {
+    difficulty: difficulty,
+    depth: full.depth,
+    solved: full.solved,
+    shallowPlaced: shallow.placed,
+    earlyForced: full.earlyForced
+  };
+}
+
+/* ---- starter cats ------------------------------------------------------
+   Every board can open with one or more cats already sitting in the right
+   spot, locked. They are the way in: each one clears its row, column,
+   patch and neighbours before the player has done anything.
+
+     normal  one starter, then more (up to N/3) until the board rates Easy
+     hard    exactly one starter
+     expert  none
+
+   Picks come from the solution in a shuffled order driven by rnd(), so the
+   Daily board's starters are the same for everyone. Re-rates the puzzle
+   with the starters in place, since they change how hard it plays.      */
+function applyGivens(puz, diff, rnd){
+  rnd = rnd || Math.random;
+  var N = puz.N, order = [];
+  for(var r = 0; r < N; r++) order.push(r * N + puz.cols[r]);
+  shuffle(order, rnd);
+  var min = diff === "expert" ? 0 : 1;
+  var max = diff === "normal" ? Math.ceil(N / 3) : min;
+  var givens = order.slice(0, min);
+  var rating = rate(puz, givens);
+  while(rating.difficulty !== "Easy" && givens.length < max){
+    givens.push(order[givens.length]);
+    rating = rate(puz, givens);
+  }
+  puz.givens = givens;
+  puz.difficulty = rating.difficulty;
+  puz.depth = rating.depth;
+  return puz;
+}
+
+/* ---- hints -------------------------------------------------------------
+   Replays the human solver from the CURRENT board, seeding it with the cats
+   the player has already (correctly) placed, and returns the next forced
+   move plus its reason. Never peeks at puz.cols.
+
+   The player's own x marks are deliberately ignored - they are notes, not
+   facts, and a wrong x should never poison a hint.                       */
+function hintFrom(N, region, catCells){
+  var S = newSolveState(N, region);
+  for(var k = 0; k < catCells.length; k++) placeCat(S, catCells[k]);
+
+  var guard = 0;
+  while(guard++ < N * N * 12){
+    var move = nextDeduction(S);
+    if(!move) return null;
+    if(move.kind === "place") return { i: move.i, why: move.why, tech: move.tech };
+    for(var m = 0; m < move.cells.length; m++) S.cand[move.cells[m]] = 0;
+  }
+  return null;
+}
+
+/* ---- verification helpers (tests use these; the game does not) --------- */
+
+// Exhaustive count, capped at `cap`. Deliberately independent of
+// findAlternate: it knows nothing about the intended solution, so it
+// cross-checks both the generator and the uniqueness guard.
+function countSolutions(N, region, cap){
+  cap = cap || 2;
+  var st = new Int32Array(N);
+  var n = 0;
+  function rec(r, colMask, regMask){
+    if(n >= cap) return;
+    if(r === N){ n++; return; }
+    var prev = r > 0 ? st[r-1] : -99;
+    for(var c = 0; c < N; c++){
+      if(colMask & (1 << c)) continue;
+      if(c >= prev - 1 && c <= prev + 1) continue;
+      var g = region[r * N + c];
+      if(g < 0 || (regMask & (1 << g))) continue;
+      st[r] = c;
+      rec(r + 1, colMask | (1 << c), regMask | (1 << g));
+      if(n >= cap) return;
+    }
+  }
+  rec(0, 0, 0);
+  return n;
+}
+
+// Exactly N regions, every one non-empty and orthogonally connected,
+// every cell assigned.
+function regionsContiguous(N, region){
+  var seen = new Uint8Array(N * N);
+  var regionsFound = 0;
+  for(var g = 0; g < N; g++){
+    var start = -1, total = 0;
+    for(var i = 0; i < N * N; i++) if(region[i] === g){ if(start < 0) start = i; total++; }
+    if(start < 0) return false;                  // empty region
+    regionsFound++;
+    var stack = [start], mark = new Uint8Array(N * N);
+    mark[start] = 1;
+    var count = 0;
+    while(stack.length){
+      var idx = stack.pop(); count++; seen[idx] = 1;
+      var r = (idx / N) | 0, c = idx % N;
+      for(var d = 0; d < 4; d++){
+        var nr = r + ORTHO[d][0], nc = c + ORTHO[d][1];
+        if(nr < 0 || nr >= N || nc < 0 || nc >= N) continue;
+        var j = nr * N + nc;
+        if(!mark[j] && region[j] === g){ mark[j] = 1; stack.push(j); }
+      }
+    }
+    if(count !== total) return false;            // disjoint blob
+  }
+  if(regionsFound !== N) return false;
+  for(var q = 0; q < N * N; q++) if(!seen[q]) return false;   // unassigned cell
+  return true;
+}
+
+// All four rules, checked against a claimed solution.
+function solutionValid(N, region, cols){
+  if(cols.length !== N) return false;            // rule 1: one cat per row
+  var usedC = new Uint8Array(N), usedG = new Uint8Array(N);
+  for(var r = 0; r < N; r++){
+    var c = cols[r];
+    if(c < 0 || c >= N) return false;
+    if(usedC[c]) return false;                   // rule 2
+    usedC[c] = 1;
+    var g = region[r * N + c];
+    if(g < 0 || usedG[g]) return false;          // rule 3
+    usedG[g] = 1;
+  }
+  for(var a = 0; a < N; a++){
+    for(var b = a + 1; b < N; b++){
+      if(Math.abs(a - b) <= 1 && Math.abs(cols[a] - cols[b]) <= 1) return false;  // rule 4
+    }
+  }
+  return true;
+}
+/* ==== PUZZLE CORE END ==== */
+
+/* =====================================================================
+   CAT ROSTER - 24 cats. emoji + a background tint + an accessory badge,
+   so there are no image assets to ship.
+   ===================================================================== */
+var ROSTER = [
+  // --- Common (8)
+  {id:"biscuit",   name:"Biscuit",     rar:"Common",    emo:"🐱", bg:"--r0", badge:"🧶", home:"the laundry basket",      blurb:"Kneads everything. Regrets nothing."},
+  {id:"marmalade", name:"Marmalade",   rar:"Common",    emo:"😺", bg:"--r1", badge:"🍊", home:"the windowsill",          blurb:"Has strong opinions about the curtains."},
+  {id:"pickle",    name:"Pickle",      rar:"Common",    emo:"😸", bg:"--r2", badge:"📦", home:"a slightly small box",    blurb:"Fits in the box. The box is too small. Fits anyway."},
+  {id:"noodle",    name:"Noodle",      rar:"Common",    emo:"🐈", bg:"--r3", badge:"🍜", home:"the stair landing",       blurb:"Longer than she has any right to be."},
+  {id:"mittens",   name:"Mittens",     rar:"Common",    emo:"😽", bg:"--r4", badge:"🧤", home:"the foot of the bed",     blurb:"Stands on your face at five in the morning. Every morning."},
+  {id:"waffle",    name:"Waffle",      rar:"Common",    emo:"😼", bg:"--r5", badge:"⌨️", home:"your keyboard",    blurb:"Sits on the warm laptop. Yours. Always yours."},
+  {id:"peanut",    name:"Peanut",      rar:"Common",    emo:"🐈‍⬛", bg:"--r6", badge:"🥜", home:"the bookshelf", blurb:"Small. Loud. Completely undeterred."},
+  {id:"clover",    name:"Clover",      rar:"Common",    emo:"😻", bg:"--r7", badge:"🍀", home:"a sunbeam",               blurb:"Found the warm patch on the floor. Will not be moved."},
+  // --- Uncommon (7)
+  {id:"saffron",   name:"Saffron",     rar:"Uncommon",  emo:"😹", bg:"--r8", badge:"🍽️", home:"the kitchen counter", blurb:"Knocks one thing off the counter a day. Chooses it carefully."},
+  {id:"domino",    name:"Domino",      rar:"Uncommon",  emo:"🐈", bg:"--r9", badge:"🎲", home:"the hallway rug",         blurb:"Two colours, one agenda."},
+  {id:"juniper",   name:"Juniper",     rar:"Uncommon",  emo:"😺", bg:"--r2", badge:"🐦", home:"the windowsill",          blurb:"Watches the birds. Appears to be taking notes."},
+  {id:"tofu",      name:"Tofu",        rar:"Uncommon",  emo:"😸", bg:"--r1", badge:"🧊", home:"the good armchair",       blurb:"Soft, roughly square, faintly suspicious of you."},
+  {id:"bramble",   name:"Bramble",     rar:"Uncommon",  emo:"😼", bg:"--r0", badge:"🌿", home:"the back porch",          blurb:"Goes out with no burrs. Comes back with eleven."},
+  {id:"cricket",   name:"Cricket",     rar:"Uncommon",  emo:"🙀", bg:"--r3", badge:"🎵", home:"behind the radiator",     blurb:"Chirps instead of meowing. Nobody has explained it."},
+  {id:"pepper",    name:"Pepper",      rar:"Uncommon",  emo:"🐱", bg:"--r6", badge:"🤧", home:"the bathroom sink",       blurb:"Sneezes at precisely the wrong moment, every time."},
+  // --- Rare (6)
+  {id:"winston",   name:"Winston",     rar:"Rare",      emo:"😾", bg:"--r7", badge:"🎩", home:"on top of the fridge",    blurb:"Has never once come when called. Not once."},
+  {id:"persimmon", name:"Persimmon",   rar:"Rare",      emo:"😻", bg:"--r0", badge:"🏵️", home:"a velvet cushion", blurb:"Orange, round, and faintly imperial about it."},
+  {id:"cobweb",    name:"Cobweb",      rar:"Rare",      emo:"🐈‍⬛", bg:"--r8", badge:"🕸️", home:"behind the sofa", blurb:"Lives behind the sofa. Emerges only for cheese."},
+  {id:"halcyon",   name:"Halcyon",     rar:"Rare",      emo:"😽", bg:"--r3", badge:"💤", home:"the long sunbeam",        blurb:"Sleeps eighteen hours a day. Dreams of nothing at all."},
+  {id:"iris",      name:"Iris",        rar:"Rare",      emo:"😼", bg:"--r9", badge:"👁️", home:"the stair banister", blurb:"Makes eye contact. Holds it. Keeps holding it."},
+  {id:"fennel",    name:"Fennel",      rar:"Rare",      emo:"😺", bg:"--r6", badge:"🌾", home:"the top of the bookcase", blurb:"Sits exactly out of reach. It is not an accident."},
+  // --- Legendary (3)
+  {id:"empresswu", name:"Empress Wu",  rar:"Legendary", emo:"😻", bg:"--r9", badge:"👑", home:"the windowsill throne",   blurb:"Rules the windowsill. Grants audiences at dusk, briefly."},
+  {id:"landlord",  name:"The Landlord",rar:"Legendary", emo:"😾", bg:"--r5", badge:"🗝️", home:"the good chair",   blurb:"Was here before you were. Will be here after."},
+  {id:"moth",      name:"Moth",        rar:"Legendary", emo:"🐾", bg:"--r4", badge:"🌙", home:"the attic beam",          blurb:"Only appears when it rains. Nobody has ever photographed her."}
+];
+var RARITIES = ["Common","Uncommon","Rare","Legendary"];
+
+/* Cat emoji used on the board itself - one per region, so a solved board
+   reads as a row of different cats rather than the same face repeated. */
+var BOARD_CATS = ["🐱","😸","😺","😻","🐈",
+                  "😼","😽","😹","🐈‍⬛","😺"];
+
+/* Cosmetic board palettes, unlocked by collection milestones. */
+var PALETTES = [
+  {id:"default",  name:"Windowsill", need:0},
+  {id:"laundry",  name:"Laundry",    need:5},
+  {id:"midnight", name:"Midnight",   need:10},
+  {id:"sunbeam",  name:"Sunbeam",    need:20}
+];
+
+/* =====================================================================
+   STORAGE - every read and write wrapped, so a blocked or full
+   localStorage degrades to a perfectly playable session that just
+   forgets things.
+   ===================================================================== */
+var SKEY = "windowsillcats.v1";
+var DEFAULTS = {
+  level:1, freeSize:6, mode:"levels",
+  invert:false, sound:false, patterns:false, theme:"auto", palette:"default",
+  diff:"normal", forgiving:false, bonusWins:0,
+  cats:{},                 // id -> {first:"YYYY-MM-DD", visits:n}
+  solved:0, winStreak:0, bestStreak:0,
+  bestTime:{}, bestScore:{},
+  daily:{}, dailyStreak:0, dailyBest:{}, lastDaily:null,
+  playStreak:0, lastPlayed:null
+};
+var S = null;
+
+function loadState(){
+  var raw = null;
+  try{ raw = localStorage.getItem(SKEY); }catch(e){ raw = null; }
+  var obj = {};
+  if(raw){ try{ obj = JSON.parse(raw) || {}; }catch(e){ obj = {}; } }
+  S = {};
+  for(var k in DEFAULTS){
+    S[k] = (obj[k] !== undefined && obj[k] !== null) ? obj[k] : clone(DEFAULTS[k]);
+  }
+  return S;
+}
+function saveState(){ try{ localStorage.setItem(SKEY, JSON.stringify(S)); }catch(e){} }
+function clone(v){ return (typeof v === "object" && v !== null) ? JSON.parse(JSON.stringify(v)) : v; }
+
+/* =====================================================================
+   SOUND - Web Audio only, no files. Muted until the player opts in.
+   ===================================================================== */
+var actx = null;
+function tone(freq, dur, type, vol, slideTo){
+  if(!S.sound) return;
+  try{
+    if(!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    if(actx.state === "suspended") actx.resume();
+    var o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime;
+    o.type = type || "sine";
+    o.frequency.setValueAtTime(freq, t);
+    if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol || 0.09, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(actx.destination);
+    o.start(t); o.stop(t + dur + 0.02);
+  }catch(e){}
+}
+var SFX = {
+  place:   function(){ tone(660, .10, "sine", .07, 900); },
+  mark:    function(){ tone(300, .05, "triangle", .035); },
+  reject:  function(){ tone(190, .22, "sawtooth", .055, 105); },
+  region:  function(){ tone(880, .12, "sine", .06, 1180); },
+  solve:   function(){ [523,659,784,1047].forEach(function(f,i){ setTimeout(function(){ tone(f,.20,"sine",.075); }, i*95); }); },
+  unlock:  function(){ [784,1047,1319].forEach(function(f,i){ setTimeout(function(){ tone(f,.26,"triangle",.07); }, i*130); }); }
+};
+
+/* =====================================================================
+   GAME STATE
+   ===================================================================== */
+var EMPTY = 0, MARK = 1, CAT = 2;
+var DOUBLE_MS = 700;      // generous on purpose: a real phone double tap is slow
+
+var N = 6, puzzle = null, grid = [], mode = "levels";
+var hearts = 3, hintsUsed = 0, solved = false, locked = false;
+var undoStack = [], redoStack = [];
+var startedAt = 0, tick = null, elapsed = 0;
+var lastTapCell = -1, lastTapAt = 0, rejectTimer = null, rejectCell = -1;
+var completedRegions = {};
+var cache = {};           // size -> pre-generated puzzle
+var genToken = 0;
+var bonus = false;        // playing an optional one-heart bonus board
+var bonusReady = false;   // just cleared a 4th level, bonus on offer
+var pendingHint = null;   // {i, why} pointed at but not yet placed
+
+var DIFF_NAMES = { normal:"Normal", hard:"Hard", expert:"Expert" };
+function diffNow(){
+  if(bonus || mode === "daily") return "hard";
+  return DIFF_NAMES[S.diff] ? S.diff : "normal";
+}
+function maxHearts(){ return bonus ? 1 : 3; }
+function isGiven(i){ return !!(puzzle && puzzle.givens && puzzle.givens.indexOf(i) >= 0); }
+
+function $(id){ return document.getElementById(id); }
+var boardEl = $("board"), overlay = $("overlay"), msgEl = $("msg");
+
+function today(){
+  var d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+function fmt(ms){
+  var s = Math.max(0, Math.floor(ms/1000));
+  return Math.floor(s/60) + ":" + String(s%60).padStart(2,"0");
+}
+function rowOf(i){ return (i / N) | 0; }
+function colOf(i){ return i % N; }
+
+/* Levels ramp the board size: 1-5 are 6x6, 6-12 are 7x7, 13-22 are 8x8,
+   23-35 are 9x9, 36 and up are 10x10. */
+function sizeForLevel(lv){
+  if(lv <= 5) return 6;
+  if(lv <= 12) return 7;
+  if(lv <= 22) return 8;
+  if(lv <= 35) return 9;
+  return 10;
+}
+function currentSize(){
+  if(mode === "levels") return sizeForLevel(S.level);
+  if(mode === "daily") return 8;
+  return S.freeSize;
+}
+function contextLabel(){
+  if(bonus) return "Bonus board · " + N + "×" + N + " · one heart";
+  if(mode === "levels") return "Level " + S.level + " · " + N + "×" + N + " · " + DIFF_NAMES[diffNow()];
+  if(mode === "daily")  return "Daily · " + today();
+  return "Free play · " + N + "×" + N + " · " + DIFF_NAMES[diffNow()];
+}
+
+/* =====================================================================
+   BOARD SIZING
+   The one thing that must never regress: --cell is a PIXEL value taken
+   from the board's real measured width after layout, never a percentage.
+   ===================================================================== */
+var lastSized = "";
+function sizeBoard(){
+  var w = boardEl.getBoundingClientRect().width;
+  if(!w) return;
+  // guard against the ResizeObserver re-entering when we set the height below
+  var key = Math.round(w * 100) + "x" + N;
+  if(key === lastSized) return;
+  lastSized = key;
+  // Explicit square in pixels rather than trusting aspect-ratio.
+  boardEl.style.height = w + "px";
+  layoutCells();
+}
+
+// Place every cell at an exact pixel rectangle. Nothing here reads content,
+// so nothing a cell contains can change any cell's size.
+function layoutCells(){
+  var cells = boardEl.children;
+  if(!cells.length) return;
+  var cw = boardEl.clientWidth, ch = boardEl.clientHeight;   // inside the border
+  if(!cw || !ch) return;
+
+  var ex = [], ey = [];
+  for(var i = 0; i <= N; i++){
+    ex.push(Math.round(i * cw / N));
+    ey.push(Math.round(i * ch / N));
+  }
+  boardEl.style.setProperty("--cell", (ch / N) + "px");
+
+  for(var r = 0; r < N; r++){
+    for(var c = 0; c < N; c++){
+      var el = cells[r * N + c];
+      if(!el) continue;
+      el.style.left   = ex[c] + "px";
+      el.style.top    = ey[r] + "px";
+      el.style.width  = (ex[c+1] - ex[c]) + "px";
+      el.style.height = (ey[r+1] - ey[r]) + "px";
+    }
+  }
+}
+if(window.ResizeObserver){
+  new ResizeObserver(sizeBoard).observe(boardEl);
+}
+window.addEventListener("resize", sizeBoard);
+window.addEventListener("orientationchange", function(){ setTimeout(sizeBoard, 120); });
+window.addEventListener("load", sizeBoard);
+window.addEventListener("pageshow", sizeBoard);
+
+/* =====================================================================
+   RENDER
+   ===================================================================== */
+function buildBoard(){
+  boardEl.style.setProperty("--n", N);
+  boardEl.innerHTML = "";
+  var frag = document.createDocumentFragment();
+  for(var r = 0; r < N; r++){
+    for(var c = 0; c < N; c++){
+      var i = r * N + c, g = puzzle.region[i];
+      var b = document.createElement("button");
+      b.className = "cell"; b.type = "button";
+      b.dataset.i = i; b.dataset.g = g % 10;
+      b.setAttribute("role", "gridcell");
+      b.style.backgroundColor = "var(" + "--r" + (g % 10) + ")";
+      // region edges thick, interior grid lines thin
+      var sh = [];
+      sh.push(edgeShadow(r-1, c, g, "0 2px 0 0", "0 1px 0 0"));
+      sh.push(edgeShadow(r+1, c, g, "0 -2px 0 0", "0 -1px 0 0"));
+      sh.push(edgeShadow(r, c-1, g, "2px 0 0 0", "1px 0 0 0"));
+      sh.push(edgeShadow(r, c+1, g, "-2px 0 0 0", "-1px 0 0 0"));
+      b.style.boxShadow = sh.join(",");
+      frag.appendChild(b);
+    }
+  }
+  boardEl.appendChild(frag);
+  lastSized = "";          // force a fresh measure for the new cell set
+  sizeBoard();
+  updateAria();
+}
+function edgeShadow(nr, nc, g, thick, thin){
+  var outside = (nr < 0 || nr >= N || nc < 0 || nc >= N) || puzzle.region[nr*N+nc] !== g;
+  return "inset " + (outside ? thick + " var(--regionline)" : thin + " var(--gridline)");
+}
+
+function paint(){
+  var cells = boardEl.children;
+  for(var i = 0; i < cells.length; i++){
+    var el = cells[i], v = grid[i];
+    if(i === rejectCell) continue;                 // mid-rejection, leave alone
+    el.classList.toggle("given", isGiven(i));
+    if(v === CAT){
+      el.innerHTML = '<span class="cat">' + BOARD_CATS[puzzle.region[i] % BOARD_CATS.length] + '</span>';
+    } else if(v === MARK){
+      el.innerHTML = '<span class="mark">×</span>';
+    } else {
+      el.innerHTML = "";
+    }
+  }
+  $("undo").disabled = undoStack.length === 0 || locked;
+  $("redo").disabled = redoStack.length === 0 || locked;
+  $("restart").disabled = !puzzle;
+  renderHintState();
+  updateAria();
+}
+// The pointed-at square stays lit until a cat sits on it.
+function renderHintState(){
+  if(pendingHint && grid[pendingHint.i] === CAT) pendingHint = null;
+  var cells = boardEl.children;
+  for(var i = 0; i < cells.length; i++){
+    cells[i].classList.toggle("hintpoint", !!pendingHint && pendingHint.i === i);
+  }
+  var hb = $("hint");
+  hb.textContent = pendingHint ? "Place it" : "Hint";
+  hb.disabled = bonus || solved || locked || !puzzle;
+}
+function updateAria(){
+  var cells = boardEl.children;
+  for(var i = 0; i < cells.length; i++){
+    var v = grid[i];
+    var what = v === CAT ? (isGiven(i) ? "starter cat, locked" : "cat") : (v === MARK ? "marked empty" : "empty");
+    cells[i].setAttribute("aria-label",
+      "row " + (rowOf(i)+1) + ", column " + (colOf(i)+1) + ", patch " + (puzzle.region[i]+1) + ", " + what);
+  }
+}
+
+function catCells(){
+  var out = [];
+  for(var i = 0; i < grid.length; i++) if(grid[i] === CAT) out.push(i);
+  return out;
+}
+
+function renderHearts(){
+  var h = "";
+  for(var i = 0; i < maxHearts(); i++) h += '<span class="heart' + (i < hearts ? "" : " gone") + '">' + (i < hearts ? "♥" : "♡") + '</span>';
+  $("hearts").innerHTML = h;
+}
+
+/* =====================================================================
+   MOVES
+   ===================================================================== */
+function pushUndo(){
+  // Unlimited on purpose. A snapshot is N*N small ints, so even a very
+  // long 10x10 session costs a trivial amount of memory.
+  undoStack.push(grid.slice());
+  redoStack.length = 0;
+}
+function startClock(){
+  if(startedAt) return;
+  startedAt = Date.now() - elapsed;
+  tick = setInterval(function(){
+    elapsed = Date.now() - startedAt;
+    $("timer").textContent = fmt(elapsed);
+  }, 250);
+}
+function stopClock(){ if(tick){ clearInterval(tick); tick = null; } }
+
+// .msg is a flex row, so bare text and <b> would each become their own
+// column. Wrap plain messages in one span; messages with a button bring
+// their own span.
+function say(html, cls){
+  msgEl.innerHTML = html.indexOf("<button") >= 0 ? html : "<span>" + html + "</span>";
+  msgEl.className = "msg" + (cls ? " " + cls : "");
+}
+
+function handleTap(i){
+  if(locked || solved || !puzzle) return;
+  if(i === rejectCell) return;
+
+  var now = Date.now();
+  var isDouble = (lastTapCell === i && (now - lastTapAt) < DOUBLE_MS);
+  lastTapCell = i; lastTapAt = now;
+
+  // Starter cats are locked in place.
+  if(isGiven(i)){
+    say("That is a starter cat. It is already right and it stays put.");
+    return;
+  }
+
+  // A cat is always picked back up by tapping it, in either control scheme.
+  if(grid[i] === CAT){
+    pushUndo(); grid[i] = EMPTY; startClock(); SFX.mark();
+    say("Picked that one back up."); paint(); return;
+  }
+
+  if(S.invert){
+    // single tap = cat, double tap = x
+    if(isDouble){ pushUndo(); grid[i] = MARK; startClock(); SFX.mark(); paint(); }
+    else tryPlaceCat(i);
+  } else {
+    if(isDouble) tryPlaceCat(i);
+    else { pushUndo(); grid[i] = (grid[i] === MARK ? EMPTY : MARK); startClock(); SFX.mark(); paint(); }
+  }
+}
+
+/* Correctness is checked against the SOLUTION, not merely against the four
+   rules. A cat that breaks no rule but is not where the answer says still
+   costs a heart - that is what makes three hearts mean anything. */
+function tryPlaceCat(i){
+  startClock();
+  var right = puzzle.cols[rowOf(i)] === colOf(i);
+  pushUndo();
+
+  if(right){
+    grid[i] = CAT;
+    SFX.place();
+    paint();
+    announceRegion(i);
+    if(!checkWin()) say("That one is right. <b>" + (N - catCells().length) + "</b> to go.");
+    return;
+  }
+
+  // --- wrong. Make the rejection impossible to miss: on a 6x6 five of every
+  // six squares are wrong, so a silent bounce reads as "tapping does nothing".
+  hearts = Math.max(0, hearts - 1);
+  renderHearts();
+  SFX.reject();
+
+  var el = boardEl.children[i];
+  rejectCell = i;
+  el.innerHTML = '<span class="ghost">' + BOARD_CATS[puzzle.region[i] % BOARD_CATS.length] + '</span>';
+  el.classList.add("reject");
+
+  say(hearts > 0
+      ? "Not there. <b>" + hearts + "</b> heart" + (hearts === 1 ? "" : "s") + " left."
+      : "Not there. That was your last heart.", "bad");
+
+  clearTimeout(rejectTimer);
+  rejectTimer = setTimeout(function(){
+    el.classList.remove("reject");
+    rejectCell = -1;
+    grid[i] = MARK;                                 // the wrong square becomes an x
+    paint();
+    if(hearts === 0) gameOver();
+  }, 900);
+}
+
+function announceRegion(i){
+  var g = puzzle.region[i];
+  if(!completedRegions[g]){ completedRegions[g] = true; SFX.region(); }
+}
+
+function checkWin(){
+  if(catCells().length !== N) return false;
+  solved = true;
+  stopClock();
+  elapsed = startedAt ? Date.now() - startedAt : 0;
+  $("timer").textContent = fmt(elapsed);
+  SFX.solve();
+
+  for(var i = 0; i < boardEl.children.length; i++){
+    if(grid[i] === CAT) boardEl.children[i].classList.add("solvepop");
+  }
+  recordWin();
+  renderHintState();
+  return true;
+}
+
+/* Out of hearts. By default the board is lost: no refill-and-carry-on, so
+   the three hearts actually mean something. Starting it over is free and
+   instant. "Forgiving hearts" in Settings brings back the free refill. */
+function gameOver(){
+  locked = true;
+  stopClock();
+  paint();
+  if(bonus){
+    showOverlay("Bonus board missed", "No harm done. Your level progress is safe.", [
+      { label:"Try again", primary:true, fn:function(){ hideOverlay(); restartBoard(); }},
+      { label:"Back to levels", fn:function(){ hideOverlay(); newPuzzle(); }}
+    ]);
+    return;
+  }
+  if(S.forgiving){
+    showOverlay("Out of hearts", "Forgiving hearts is on, so the refill is free. No ad, no wait.", [
+      { label:"Refill hearts", primary:true, fn:function(){
+          hearts = maxHearts(); locked = false; renderHearts(); hideOverlay();
+          say("Hearts back. Carry on."); startedAt = Date.now() - elapsed; startClock(); paint();
+        }},
+      { label:"New board", fn:function(){ hideOverlay(); newPuzzle(); }}
+    ]);
+    return;
+  }
+  S.winStreak = 0; saveState();
+  var btns = [{ label:"Try again", primary:true, fn:function(){ hideOverlay(); restartBoard(); }}];
+  if(mode !== "daily") btns.push({ label:"New board", fn:function(){ hideOverlay(); newPuzzle(); }});
+  showOverlay("Out of hearts", "This board got away. Start it over, same cats, fresh hearts.", btns);
+}
+
+/* =====================================================================
+   SCORE + STATS
+   ===================================================================== */
+function scoreFor(){
+  var secs = Math.floor(elapsed / 1000);
+  var base = N * N * 12;
+  var timeBonus = Math.max(0, 540 - secs) * 2;
+  var heartBonus = (bonus ? 3 : hearts) * 260;
+  var hintPenalty = hintsUsed * 160;
+  var mult = bonus ? 2 : ({ normal:1, hard:1.35, expert:1.75 }[diffNow()] || 1);
+  return Math.max(0, Math.round((base + timeBonus + heartBonus - hintPenalty) * mult));
+}
+
+function bestKey(){ return bonus ? "bonus" : "d:" + diffNow(); }
+
+function recordWin(){
+  var diff = puzzle.difficulty;
+  var key = bestKey();
+  var score = scoreFor();
+  var clean = (hearts === maxHearts() && hintsUsed === 0);
+  var day = today();
+  var wasBonus = bonus;
+  pendingHint = null;
+
+  S.solved++;
+  S.winStreak++;
+  if(S.winStreak > S.bestStreak) S.bestStreak = S.winStreak;
+
+  // daily play streak
+  if(S.lastPlayed !== day){
+    var y = new Date(); y.setDate(y.getDate() - 1);
+    var yesterday = y.getFullYear() + "-" + String(y.getMonth()+1).padStart(2,"0") + "-" + String(y.getDate()).padStart(2,"0");
+    S.playStreak = (S.lastPlayed === yesterday) ? S.playStreak + 1 : 1;
+    S.lastPlayed = day;
+  }
+
+  var isBestTime = !S.bestTime[key] || elapsed < S.bestTime[key];
+  if(isBestTime) S.bestTime[key] = elapsed;
+  var isBestScore = !S.bestScore[key] || score > S.bestScore[key];
+  if(isBestScore) S.bestScore[key] = score;
+
+  if(mode === "daily"){
+    if(!S.daily[day]) S.daily[day] = { time: elapsed, score: score };
+    else {
+      if(elapsed < S.daily[day].time) S.daily[day].time = elapsed;
+      if(score > S.daily[day].score) S.daily[day].score = score;
+    }
+    if(S.lastDaily !== day){
+      var d2 = new Date(); d2.setDate(d2.getDate() - 1);
+      var yd = d2.getFullYear() + "-" + String(d2.getMonth()+1).padStart(2,"0") + "-" + String(d2.getDate()).padStart(2,"0");
+      S.dailyStreak = (S.lastDaily === yd) ? S.dailyStreak + 1 : 1;
+      S.lastDaily = day;
+    }
+  }
+  // Bonus boards sit outside the level count, so they never block progress.
+  bonusReady = false;
+  if(wasBonus){
+    S.bonusWins = (S.bonusWins || 0) + 1;
+  } else if(mode === "levels"){
+    S.level++;
+    if((S.level - 1) % 4 === 0) bonusReady = true;   // just cleared level 4, 8, 12...
+  }
+
+  var before = Object.keys(S.cats).length;
+  var earned = awardCat(diff, clean, wasBonus);
+  var after = Object.keys(S.cats).length;
+
+  saveState();
+  renderBest(); renderCatDot(); renderContext();
+
+  var bits = [];
+  bits.push("<b>" + (wasBonus ? "Bonus board cleared" : "Solved") + " in " + fmt(elapsed) + ".</b>");
+  bits.push(score.toLocaleString() + " points" + (isBestScore ? ", best yet" : "") + ".");
+  if(isBestTime && !wasBonus) bits.push("Fastest " + DIFF_NAMES[diffNow()] + " so far.");
+  if(clean && !wasBonus) bits.push("Clean run, no hints, no hearts lost.");
+  if(bonusReady) bits.push("Bonus board unlocked: one heart, no hints, rarer cat. Tap New to skip it.");
+  say("<span>" + bits.join(" ") + "</span>" +
+      (bonusReady ? '<button class="btn primary" id="playBonus">Play bonus</button>' : ""), "win");
+  if(bonusReady){
+    $("playBonus").onclick = function(){ newPuzzle({ bonus:true }); };
+  }
+
+  // milestone palettes
+  var unlockedNow = null;
+  for(var p = 0; p < PALETTES.length; p++){
+    if(PALETTES[p].need > before && PALETTES[p].need <= after) unlockedNow = PALETTES[p];
+  }
+  showReveal(earned, unlockedNow);
+}
+
+/* =====================================================================
+   CAT COLLECTION
+   Rarity is gated by BOARD SIZE, not by the rated difficulty, because the
+   generator rates roughly two thirds of every size Hard - gating on the
+   rating alone would make Legendary farmable on a 6x6. The rating and a
+   clean run each bump the tier up by one instead.
+   ===================================================================== */
+function tierForBoard(size, diff, clean, isBonus){
+  var tier = (size >= 10) ? 2 : (size >= 8 ? 1 : 0);   // 0 = up to Uncommon, 1 = +Rare, 2 = +Legendary
+  if(diff === "Hard") tier++;
+  if(clean) tier++;
+  if(isBonus) tier++;
+  return Math.min(3, tier);
+}
+function awardCat(diff, clean, isBonus){
+  var tier = tierForBoard(N, diff, clean, isBonus);
+  var maxRarity = Math.min(3, tier);                  // index into RARITIES
+  var pool = ROSTER.filter(function(c){
+    return RARITIES.indexOf(c.rar) <= maxRarity && !S.cats[c.id];
+  });
+  // widen if that tier is exhausted, so a solve never awards nothing
+  if(!pool.length) pool = ROSTER.filter(function(c){ return !S.cats[c.id]; });
+
+  if(pool.length){
+    // weight toward the rarer end of what is available, gently
+    var weights = pool.map(function(c){ return 1 + RARITIES.indexOf(c.rar) * 0.35; });
+    var total = weights.reduce(function(a,b){ return a+b; }, 0);
+    var roll = Math.random() * total, acc = 0, chosen = pool[pool.length-1];
+    for(var i = 0; i < pool.length; i++){ acc += weights[i]; if(roll <= acc){ chosen = pool[i]; break; } }
+    S.cats[chosen.id] = { first: today(), visits: 1 };
+    return { cat: chosen, isNew: true };
+  }
+
+  // everything collected - a repeat visit, never nothing
+  var all = ROSTER.slice();
+  var pick = all[Math.floor(Math.random() * all.length)];
+  S.cats[pick.id].visits = (S.cats[pick.id].visits || 1) + 1;
+  return { cat: pick, isNew: false };
+}
+
+function avatarHTML(cat, locked){
+  if(locked){
+    return '<div class="av" style="background:var(--surface-3)"><span class="sil">' + cat.emo + '</span></div>';
+  }
+  return '<div class="av" style="background:var(' + cat.bg + ')">' + cat.emo +
+         '<span class="badge">' + cat.badge + '</span></div>';
+}
+
+function renderCollection(){
+  var owned = Object.keys(S.cats).length;
+  var counts = { Common:0, Uncommon:0, Rare:0, Legendary:0 };
+  var totals = { Common:0, Uncommon:0, Rare:0, Legendary:0 };
+  ROSTER.forEach(function(c){
+    totals[c.rar]++;
+    if(S.cats[c.id]) counts[c.rar]++;
+  });
+
+  var t = '<span class="pill"><b>' + owned + "</b> of " + ROSTER.length + " cats</span>";
+  RARITIES.forEach(function(r){
+    t += '<span class="pill ' + r + '">' + r + " " + counts[r] + "/" + totals[r] + "</span>";
+  });
+  $("tally").innerHTML = t;
+
+  var h = "";
+  ROSTER.forEach(function(c, idx){
+    var got = S.cats[c.id];
+    h += '<button class="catcard' + (got ? "" : " locked") + '" data-cat="' + c.id + '">' +
+         avatarHTML(c, !got) +
+         '<span class="nm">' + (got ? c.name : "?????") + "</span>" +
+         '<span class="rr ' + c.rar + '">' + c.rar + "</span>" +
+         (got && got.visits > 1 ? '<span class="visits">visited ' + got.visits + "×</span>" : "") +
+         "</button>";
+  });
+  $("catGrid").innerHTML = h;
+  $("catDetail").hidden = true;
+
+  Array.prototype.forEach.call($("catGrid").children, function(btn){
+    btn.onclick = function(){ showCatDetail(btn.dataset.cat); };
+  });
+}
+function showCatDetail(id){
+  var c = null;
+  for(var i = 0; i < ROSTER.length; i++) if(ROSTER[i].id === id) c = ROSTER[i];
+  if(!c) return;
+  var got = S.cats[c.id];
+  var d = $("catDetail");
+  d.hidden = false;
+  if(!got){
+    d.innerHTML = '<h3>Not home yet</h3><div class="row"><div class="lab">A ' +
+      '<span class="rr ' + c.rar + '">' + c.rar + "</span> cat you have not met." +
+      '<span class="hint">Keep solving. ' +
+      (c.rar === "Legendary" ? "Legendary cats only turn up on the big boards."
+       : c.rar === "Rare" ? "Rare cats want an 8×8 or bigger." : "This one turns up on any board.") +
+      "</span></div></div>";
+    d.scrollIntoView({ block:"nearest", behavior: reducedMotion() ? "auto" : "smooth" });
+    return;
+  }
+  d.innerHTML =
+    '<h3>' + c.name + "</h3>" +
+    '<div class="row"><div class="lab">' + c.blurb +
+      '<span class="hint">Lives on ' + c.home + ".</span></div>" +
+      avatarHTML(c, false) + "</div>" +
+    '<div class="row"><div class="lab">Rarity</div><span class="rr ' + c.rar + '">' + c.rar + "</span></div>" +
+    '<div class="row"><div class="lab">First came round</div><span class="lab">' + got.first + "</span></div>" +
+    '<div class="row"><div class="lab">Times visited</div><span class="lab">' + (got.visits || 1) + "</span></div>";
+  d.scrollIntoView({ block:"nearest", behavior: reducedMotion() ? "auto" : "smooth" });
+}
+function renderCatDot(){ $("catDot").textContent = Object.keys(S.cats).length; }
+
+function reducedMotion(){
+  return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/* The reveal moment: about a second and a half, skippable with a tap. */
+var revealTimer = null;
+function showReveal(earned, unlockedPalette){
+  if(!earned) return;
+  var c = earned.cat, got = S.cats[c.id];
+  var head = earned.isNew ? "A new cat moved in" : c.name + " came back";
+  var extra = earned.isNew ? "" : '<p>Visit number ' + got.visits + ".</p>";
+  var pal = unlockedPalette
+    ? '<p style="color:var(--accent);font-weight:700">New board palette unlocked: ' + unlockedPalette.name + "</p>"
+    : "";
+
+  $("revealCard").innerHTML =
+    '<div class="rr ' + c.rar + '">' + c.rar + "</div>" +
+    avatarHTML(c, false) +
+    "<h3>" + c.name + "</h3>" +
+    "<p>" + c.blurb + "</p>" +
+    '<p style="font-size:12px">Home: ' + c.home + "</p>" +
+    extra + pal +
+    '<div class="tap">' + head + " · tap to carry on</div>";
+
+  $("reveal").classList.add("on");
+  if(earned.isNew) SFX.unlock();
+  clearTimeout(revealTimer);
+  revealTimer = setTimeout(hideReveal, reducedMotion() ? 2400 : 1500);
+}
+function hideReveal(){ clearTimeout(revealTimer); $("reveal").classList.remove("on"); }
+$("reveal").addEventListener("click", hideReveal);
+
+/* =====================================================================
+   HINTS - from the human solver, never from the answer key. On the rare
+   board the solver cannot finish, we say so plainly rather than pretending
+   the reveal was a deduction.
+   ===================================================================== */
+/* Two-step hint. First tap points at the next square you can work out and
+   says why, without touching the board. Second tap sits the cat there.
+   Only the first tap counts as a hint used. */
+$("hint").onclick = function(){
+  if(!puzzle || solved || locked || bonus) return;
+  startClock();
+
+  if(pendingHint && grid[pendingHint.i] !== CAT){
+    var p = pendingHint.i;
+    pendingHint = null;
+    pushUndo();
+    grid[p] = CAT;
+    paint(); pulse(p); announceRegion(p); SFX.place();
+    if(!checkWin()) say("Cat placed. <b>" + (N - catCells().length) + "</b> to go.");
+    return;
+  }
+
+  var h = hintFrom(N, puzzle.region, catCells());
+  if(h){
+    hintsUsed++;
+    pendingHint = { i: h.i };
+    paint();
+    say("Look at row " + (rowOf(h.i)+1) + ", column " + (colOf(h.i)+1) + ": " + h.why +
+        ". Tap <b>Place it</b> to sit the cat there.");
+    return;
+  }
+
+  // solver is stuck: be honest about it
+  var next = -1;
+  for(var r = 0; r < N; r++){
+    var i = r * N + puzzle.cols[r];
+    if(grid[i] !== CAT){ next = i; break; }
+  }
+  if(next < 0){ say("Nothing left to work out."); return; }
+  hintsUsed++;
+  pendingHint = { i: next };
+  paint();
+  say("No clean single step from here, this board needs a longer chain. " +
+      "Row " + (rowOf(next)+1) + ", column " + (colOf(next)+1) + " is right, taken from the answer.");
+};
+function pulse(i){
+  var el = boardEl.children[i];
+  el.classList.add("hintpulse");
+  setTimeout(function(){ el.classList.remove("hintpulse"); }, 3400);
+}
+
+/* =====================================================================
+   CONTROLS
+   ===================================================================== */
+boardEl.addEventListener("click", function(e){
+  var cell = e.target.closest(".cell");
+  if(!cell) return;
+  handleTap(+cell.dataset.i);
+});
+
+boardEl.addEventListener("keydown", function(e){
+  var cell = e.target.closest(".cell");
+  if(!cell) return;
+  var i = +cell.dataset.i, r = rowOf(i), c = colOf(i);
+  if(e.key === "ArrowUp") r--;
+  else if(e.key === "ArrowDown") r++;
+  else if(e.key === "ArrowLeft") c--;
+  else if(e.key === "ArrowRight") c++;
+  else if(e.key === " " || e.key === "Enter"){
+    e.preventDefault();
+    cycleCell(i);
+    return;
+  } else return;
+  e.preventDefault();
+  if(r < 0 || r >= N || c < 0 || c >= N) return;
+  boardEl.children[r*N+c].focus();
+});
+// Keyboard cycles empty -> x -> cat -> empty, so every state is reachable
+// without needing a double tap.
+function cycleCell(i){
+  if(locked || solved || !puzzle || i === rejectCell) return;
+  if(isGiven(i)){ say("That is a starter cat. It is already right and it stays put."); return; }
+  if(grid[i] === EMPTY){ pushUndo(); grid[i] = MARK; startClock(); SFX.mark(); paint(); }
+  else if(grid[i] === MARK){ tryPlaceCat(i); }
+  else { pushUndo(); grid[i] = EMPTY; SFX.mark(); paint(); }
+}
+
+$("undo").onclick = function(){
+  if(!undoStack.length || locked) return;
+  redoStack.push(grid.slice());
+  grid = undoStack.pop();
+  solved = false;
+  paint();
+  say("Undone. Hearts stay spent.");
+};
+$("redo").onclick = function(){
+  if(!redoStack.length || locked) return;
+  undoStack.push(grid.slice());
+  grid = redoStack.pop();
+  paint();
+  if(!checkWin()) say("Redone.");
+};
+$("newBtn").onclick = function(){
+  if(mode === "daily"){ say("The daily board is the same for everyone until midnight. Restart is free."); return; }
+  var givenCount = puzzle && puzzle.givens ? puzzle.givens.length : 0;
+  if(!solved && !bonus && catCells().length > givenCount){ S.winStreak = 0; saveState(); }
+  newPuzzle();
+};
+$("restart").onclick = function(){
+  if(!puzzle) return;
+  restartBoard();
+};
+
+/* difficulty picker */
+Array.prototype.forEach.call(document.querySelectorAll('#diffPick [data-diff]'), function(b){
+  b.onclick = function(){
+    if(S.diff === b.dataset.diff && !bonus) return;
+    S.diff = b.dataset.diff; saveState();
+    syncSeg("#diffPick", "diff", S.diff);
+    newPuzzle();
+  };
+});
+
+/* mode + size pickers */
+Array.prototype.forEach.call(document.querySelectorAll('.seg [data-mode]'), function(b){
+  b.onclick = function(){ setMode(b.dataset.mode); };
+});
+Array.prototype.forEach.call(document.querySelectorAll('#sizePick [data-size]'), function(b){
+  b.onclick = function(){
+    S.freeSize = +b.dataset.size; saveState();
+    syncSeg("#sizePick", "size", S.freeSize);
+    newPuzzle();
+  };
+});
+function syncSeg(sel, attr, val){
+  Array.prototype.forEach.call(document.querySelectorAll(sel + " [data-" + attr + "]"), function(b){
+    b.setAttribute("aria-pressed", String(b.dataset[attr] == val));
+  });
+}
+function setMode(m){
+  mode = m; S.mode = m; saveState();
+  syncSeg(".seg", "mode", m);
+  $("sizePick").hidden = (m !== "free");
+  $("diffPick").hidden = (m === "daily");
+  newPuzzle();
+}
+
+/* =====================================================================
+   PUZZLE LOADING
+   10x10 can take the better part of a second, so we show a loading state
+   and pre-generate the next board in the background as soon as the current
+   one is playable.
+   ===================================================================== */
+function showOverlay(title, text, buttons){
+  $("ovTitle").textContent = title;
+  $("ovText").textContent = text || "";
+  overlay.querySelector(".spinner").style.display = buttons ? "none" : "";
+  var box = $("ovBtns"); box.innerHTML = "";
+  (buttons || []).forEach(function(b){
+    var el = document.createElement("button");
+    el.className = "btn" + (b.primary ? " primary" : "");
+    el.textContent = b.label;
+    el.onclick = b.fn;
+    box.appendChild(el);
+  });
+  overlay.classList.add("on");
+}
+function hideOverlay(){ overlay.classList.remove("on"); }
+
+// Fresh attempt state: full hearts, clock at zero, only starter cats down.
+function resetAttempt(){
+  hearts = maxHearts(); hintsUsed = 0; solved = false; locked = false;
+  undoStack = []; redoStack = []; completedRegions = {}; pendingHint = null;
+  startedAt = 0; elapsed = 0; stopClock();
+  lastTapCell = -1; rejectCell = -1; clearTimeout(rejectTimer);
+  $("timer").textContent = "0:00";
+  renderHearts();
+}
+function freshGrid(){
+  grid = new Array(N*N).fill(EMPTY);
+  (puzzle.givens || []).forEach(function(i){
+    grid[i] = CAT;
+    completedRegions[puzzle.region[i]] = true;
+  });
+}
+function startMessage(){
+  var g = puzzle.givens ? puzzle.givens.length : 0;
+  var lead = bonus ? "Bonus board. One heart, no hints. Start from the locked starter cat. "
+           : g === 1 ? "Start from the starter cat with the lock. "
+           : g > 1 ? "Start from the " + g + " starter cats with locks. "
+           : "No starter cats on Expert. ";
+  return lead + (S.invert ? "Tap once to sit a cat down, twice for ×."
+                          : "Tap once for ×, twice to sit a cat there.");
+}
+// Same board, same starter cats, fresh hearts and clock.
+function restartBoard(){
+  hideOverlay();
+  resetAttempt();
+  for(var i = 0; i < boardEl.children.length; i++){
+    boardEl.children[i].classList.remove("solvepop", "reject", "hintpulse");
+  }
+  freshGrid();
+  paint();
+  say("Board reset. " + startMessage());
+}
+
+function newPuzzle(opts){
+  var myToken = ++genToken;
+  bonus = !!(opts && opts.bonus);
+  bonusReady = false;
+  N = currentSize();
+  boardEl.style.setProperty("--n", N);
+  renderContext();
+  renderBest();
+
+  resetAttempt();
+  paintEmptyChrome();
+  $("hint").disabled = bonus;
+
+  showOverlay(N >= 10 ? "Herding ten cats…" : (bonus ? "Setting up the bonus board…" : "Waking the cats…"), "");
+
+  // Yield so the loading overlay paints before generation blocks the thread.
+  // Deliberately NOT requestAnimationFrame: rAF does not fire in a hidden or
+  // throttled tab, which would leave the board stuck on the spinner forever.
+  setTimeout(function(){
+    if(myToken !== genToken) return;
+    var p, rnd = Math.random, diff = diffNow();
+    if(mode === "daily"){
+      rnd = mulberry32(hashSeed("windowsill-" + today()));
+      p = generate(8, rnd);
+    } else if(cache[N]){
+      p = cache[N]; cache[N] = null;
+    } else {
+      p = generate(N);
+    }
+    // Expert wants a board the solver rates Hard with no starter cats.
+    // Most boards already are; give it a short time budget to find one.
+    if(p && diff === "expert" && p.difficulty !== "Hard" && mode !== "daily"){
+      var t0 = Date.now();
+      while(Date.now() - t0 < 1200){
+        var q = generate(N);
+        if(q && q.difficulty === "Hard"){ p = q; break; }
+      }
+    }
+    if(p) applyGivens(p, diff, rnd);
+    if(myToken !== genToken) return;
+    if(!p){
+      showOverlay("That one would not settle", "Could not build a board with exactly one answer. Try again.", [
+        { label:"Try again", primary:true, fn:function(){ hideOverlay(); newPuzzle(); }}
+      ]);
+      return;
+    }
+    puzzle = p;
+    freshGrid();
+    buildBoard();
+    paint();
+    hideOverlay();
+    renderContext();
+    renderBest();
+    say(startMessage());
+    prefetch();
+  }, 30);
+}
+function paintEmptyChrome(){
+  $("undo").disabled = true; $("redo").disabled = true;
+}
+// Pre-generate the next board of this size while the player works.
+function prefetch(){
+  if(mode === "daily") return;
+  var size = N;
+  setTimeout(function(){
+    if(cache[size] || size !== N) return;
+    try{ cache[size] = generate(size); }catch(e){}
+  }, 800);
+}
+
+function renderContext(){
+  $("ctxLabel").textContent = contextLabel();
+}
+function renderBest(){
+  if(mode === "daily"){
+    var d = S.daily[today()];
+    $("bestWrap").innerHTML = "streak <b>" + (S.dailyStreak || 0) + "</b>" +
+      (d ? " &middot; today <b>" + fmt(d.time) + "</b>" : "");
+    return;
+  }
+  var key = bestKey();
+  var t = S.bestTime[key] ? fmt(S.bestTime[key]) : "—";
+  $("bestWrap").innerHTML = "best <b id='best'>" + t + "</b>";
+}
+
+/* =====================================================================
+   SETTINGS
+   ===================================================================== */
+function applyTheme(){
+  var root = document.documentElement;
+  if(S.theme === "auto") root.removeAttribute("data-theme");
+  else root.setAttribute("data-theme", S.theme);
+  if(S.palette && S.palette !== "default") root.setAttribute("data-pal", S.palette);
+  else root.removeAttribute("data-pal");
+  boardEl.classList.toggle("pat", !!S.patterns);
+}
+function setSwitch(el, on){ el.setAttribute("aria-checked", on ? "true" : "false"); }
+
+function renderPalettes(){
+  var owned = Object.keys(S.cats).length;
+  var h = "", locked = [];
+  PALETTES.forEach(function(p){
+    var ok = owned >= p.need;
+    if(!ok) locked.push(p.name + " at " + p.need);
+    h += '<button data-pal="' + p.id + '" aria-pressed="' + (S.palette === p.id) + '"' +
+         (ok ? "" : " disabled style='opacity:.4'") + ">" + p.name + "</button>";
+  });
+  $("palPick").innerHTML = h;
+  $("palHint").textContent = locked.length
+    ? "Unlocks at 5, 10 and 20 cats. Still to come: " + locked.join(", ") + "."
+    : "All palettes unlocked.";
+  Array.prototype.forEach.call($("palPick").children, function(b){
+    b.onclick = function(){
+      if(b.disabled) return;
+      S.palette = b.dataset.pal; saveState(); applyTheme(); renderPalettes();
+    };
+  });
+}
+function renderStats(){
+  var rows = [
+    ["Puzzles solved", S.solved],
+    ["Win streak", S.winStreak + (S.bestStreak ? " (best " + S.bestStreak + ")" : "")],
+    ["Daily streak", S.dailyStreak || 0],
+    ["Days played in a row", S.playStreak || 0],
+    ["Bonus boards cleared", S.bonusWins || 0],
+    ["Best bonus time", S.bestTime.bonus ? fmt(S.bestTime.bonus) : "—"]
+  ];
+  ["normal","hard","expert"].forEach(function(d){
+    var k = "d:" + d, nm = DIFF_NAMES[d];
+    rows.push(["Best " + nm + " time", S.bestTime[k] ? fmt(S.bestTime[k]) : "—"]);
+    rows.push(["Best " + nm + " score", S.bestScore[k] ? S.bestScore[k].toLocaleString() : "—"]);
+  });
+  $("statGrid").innerHTML = rows.map(function(r){
+    return '<div class="stat"><div class="k">' + r[0] + '</div><div class="v">' + r[1] + "</div></div>";
+  }).join("");
+}
+
+$("openCats").onclick = function(){ renderCollection(); $("catsSheet").classList.add("on"); };
+$("closeCats").onclick = function(){ $("catsSheet").classList.remove("on"); };
+$("openSet").onclick = function(){
+  setSwitch($("swInvert"), S.invert); setSwitch($("swSound"), S.sound); setSwitch($("swPat"), S.patterns);
+  setSwitch($("swForgive"), S.forgiving);
+  syncSeg("#themePick", "theme", S.theme);
+  renderPalettes(); renderStats();
+  $("backup").value = "";
+  $("setSheet").classList.add("on");
+};
+$("closeSet").onclick = function(){ $("setSheet").classList.remove("on"); };
+
+$("swInvert").onclick = function(){ S.invert = !S.invert; setSwitch(this, S.invert); saveState(); };
+$("swForgive").onclick = function(){ S.forgiving = !S.forgiving; setSwitch(this, S.forgiving); saveState(); };
+$("swSound").onclick = function(){
+  S.sound = !S.sound; setSwitch(this, S.sound); saveState();
+  if(S.sound) SFX.place();
+};
+$("swPat").onclick = function(){ S.patterns = !S.patterns; setSwitch(this, S.patterns); saveState(); applyTheme(); };
+Array.prototype.forEach.call(document.querySelectorAll('#themePick [data-theme]'), function(b){
+  b.onclick = function(){ S.theme = b.dataset.theme; saveState(); applyTheme(); syncSeg("#themePick","theme",S.theme); };
+});
+
+$("doExport").onclick = function(){ $("backup").value = JSON.stringify(S); };
+$("doCopy").onclick = function(){
+  if(!$("backup").value) $("backup").value = JSON.stringify(S);
+  var ta = $("backup"); ta.select();
+  var done = false;
+  try{ done = document.execCommand("copy"); }catch(e){}
+  if(navigator.clipboard && !done){
+    navigator.clipboard.writeText(ta.value).then(function(){ flashSet("Copied."); }, function(){ flashSet("Select it and copy by hand."); });
+  } else flashSet(done ? "Copied." : "Select it and copy by hand.");
+};
+$("doImport").onclick = function(){
+  var txt = $("backup").value.trim();
+  if(!txt){ flashSet("Paste a save into the box first."); return; }
+  var obj;
+  try{ obj = JSON.parse(txt); }catch(e){ flashSet("That is not valid save data."); return; }
+  if(typeof obj !== "object" || obj === null){ flashSet("That is not valid save data."); return; }
+  for(var k in DEFAULTS) if(obj[k] !== undefined) S[k] = obj[k];
+  saveState(); applyTheme(); renderCatDot(); renderPalettes(); renderStats();
+  flashSet("Imported. " + Object.keys(S.cats || {}).length + " cats restored.");
+};
+$("doReset").onclick = function(){
+  if(!window.confirm("Erase every cat, stat and streak on this device? This cannot be undone.")) return;
+  try{ localStorage.removeItem(SKEY); }catch(e){}
+  S = null; loadState(); applyTheme(); renderCatDot(); renderPalettes(); renderStats();
+  flashSet("Erased.");
+};
+function flashSet(t){
+  var el = $("palHint");
+  el.textContent = t;
+  setTimeout(function(){ renderPalettes(); }, 2200);
+}
+
+/* Esc closes whatever is open */
+document.addEventListener("keydown", function(e){
+  if(e.key !== "Escape") return;
+  if($("reveal").classList.contains("on")) return hideReveal();
+  $("catsSheet").classList.remove("on");
+  $("setSheet").classList.remove("on");
+});
+
+/* =====================================================================
+   BOOT
+   ===================================================================== */
+function boot(){
+  loadState();
+  applyTheme();
+  renderCatDot();
+  mode = S.mode || "levels";
+  syncSeg(".seg", "mode", mode);
+  syncSeg("#sizePick", "size", S.freeSize);
+  syncSeg("#diffPick", "diff", S.diff);
+  $("sizePick").hidden = (mode !== "free");
+  $("diffPick").hidden = (mode === "daily");
+  newPuzzle();
+}
+
+/* =====================================================================
+   ?test=1 - runs the suite against this file's own inlined core.
+   ===================================================================== */
+function runTests(){
+  document.body.innerHTML = '<div id="testout">running…</div>';
+  var out = document.getElementById("testout");
+  var lines = [], fails = 0;
+  function log(s){ lines.push(s); out.innerHTML = lines.join("\n"); }
+
+  var params = new URLSearchParams(location.search);
+  var COUNT = parseInt(params.get("n"), 10) || 40;
+
+  log("Windowsill Cats — core tests (inlined core)");
+  log(COUNT + " puzzles per size, sizes 6–10\n");
+
+  setTimeout(function(){
+    var sizes = [6,7,8,9,10], si = 0;
+    function step(){
+      if(si >= sizes.length) return finish();
+      var Nn = sizes[si++];
+      var t0 = performance.now(), diffs = {Easy:0,Medium:0,Hard:0}, worst = 0;
+      for(var t = 0; t < COUNT; t++){
+        var a = performance.now();
+        var p = generate(Nn);
+        var el = performance.now() - a;
+        if(el > worst) worst = el;
+        if(!p){ fails++; log('<span class="bad">FAIL</span> N=' + Nn + ' #' + t + ' generate returned null'); continue; }
+        if(!regionsContiguous(Nn, p.region)){ fails++; log('<span class="bad">FAIL</span> N=' + Nn + ' #' + t + ' regions not contiguous'); }
+        if(new Set(p.region).size !== Nn){ fails++; log('<span class="bad">FAIL</span> N=' + Nn + ' #' + t + ' wrong region count'); }
+        if(!solutionValid(Nn, p.region, p.cols)){ fails++; log('<span class="bad">FAIL</span> N=' + Nn + ' #' + t + ' solution breaks a rule'); }
+        var ns = countSolutions(Nn, p.region, 3);
+        if(ns !== 1){ fails++; log('<span class="bad">FAIL</span> N=' + Nn + ' #' + t + ' ' + ns + ' solutions'); }
+        diffs[p.difficulty]++;
+        // starter cats: right count per difficulty, every one on the solution
+        ["normal","hard","expert"].forEach(function(dk){
+          applyGivens(p, dk);
+          var gv = p.givens, lo = dk === "expert" ? 0 : 1, hi = dk === "normal" ? Math.ceil(Nn/3) : lo;
+          if(gv.length < lo || gv.length > hi){ fails++; log('<span class="bad">FAIL</span> N=' + Nn + ' #' + t + ' ' + dk + ' has ' + gv.length + ' starters'); }
+          gv.forEach(function(i){
+            if(p.cols[(i / Nn) | 0] !== i % Nn){ fails++; log('<span class="bad">FAIL</span> N=' + Nn + ' #' + t + ' starter off the solution'); }
+          });
+        });
+      }
+      var tot = performance.now() - t0;
+      log("N=" + Nn + "  " + COUNT + " puzzles  avg " + (tot/COUNT).toFixed(1) + "ms  worst " + worst.toFixed(1) +
+          "ms  |  Easy " + diffs.Easy + " Medium " + diffs.Medium + " Hard " + diffs.Hard);
+      setTimeout(step, 10);
+    }
+    function finish(){
+      // determinism
+      var a = generate(8, mulberry32(hashSeed("2026-09-01")));
+      var b = generate(8, mulberry32(hashSeed("2026-09-01")));
+      if(JSON.stringify(a.region) !== JSON.stringify(b.region)){ fails++; log('<span class="bad">FAIL</span> daily seed not reproducible'); }
+      else log("\nseeded daily puzzles reproduce exactly");
+      log(fails ? '\n<span class="bad">' + fails + " FAILURE(S)</span>" : '\n<span class="ok">all assertions passed</span>');
+    }
+    step();
+  }, 30);
+}
+
+if(new URLSearchParams(location.search).get("test") === "1") runTests();
+else boot();
+
+})();
+</script>
+</body></html>
