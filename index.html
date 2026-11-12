@@ -61,21 +61,31 @@
 :root[data-pal="laundry"]{
   --r0:#EBD9C4; --r1:#F2E7CE; --r2:#CBD9C6; --r3:#C2D4DA; --r4:#C8CCDE;
   --r5:#DCC8D4; --r6:#E8CDBE; --r7:#DAD6CA; --r8:#C6CFCB; --r9:#D2C8DE;
-  --regionline:#5C544A; --accent:#7A6A55; --accent-soft:#EDE5D8;
+  --regionline:#5C544A; --accent:#7A6A55; --accent-soft:#EDE5D8; --cellink:#2A2622;
 }
-:root[data-pal="laundry"][data-theme="dark"], :root[data-pal="laundry"]:not([data-theme="light"]) .darkonly{}
 :root[data-pal="midnight"]{
   --r0:#3A3352; --r1:#37405E; --r2:#2E4A55; --r3:#2B3C57; --r4:#414068;
   --r5:#4B3557; --r6:#523650; --r7:#3E3B4E; --r8:#334247; --r9:#463C63;
   --regionline:#CFC8F0; --gridline:rgba(207,200,240,.24);
   --bg:#0B0B14; --surface:#14141F; --surface-2:#1C1C2A; --surface-3:#252537;
   --ink:#E8E6F5; --muted:#9B98B8; --line:rgba(232,230,245,.16);
-  --accent:#9D8DF1; --accent-ink:#0B0B14; --accent-soft:#2A2545;
+  --accent:#9D8DF1; --accent-ink:#0B0B14; --accent-soft:#2A2545; --cellink:#E8E6F5;
+  /* Midnight is dark whatever the theme, so it needs the dark status colours too */
+  --danger:#E58A8A; --danger-soft:#3B2124; --good:#7EC9A2; --gold:#E3B860;
+  --shadow:0 1px 0 rgba(0,0,0,.4), 0 10px 28px -16px #000;
 }
 :root[data-pal="sunbeam"]{
   --r0:#FFD9A0; --r1:#FFF0B0; --r2:#CDE8B4; --r3:#B8E2E8; --r4:#C4D2F0;
   --r5:#F2C4DC; --r6:#FFC2A8; --r7:#EDE0BE; --r8:#CFDCCB; --r9:#DDC9F0;
-  --regionline:#7A4A12; --accent:#C2701A; --accent-soft:#FCE6CC; --gold:#C2701A;
+  --regionline:#7A4A12; --accent:#C2701A; --accent-soft:#FCE6CC; --gold:#C2701A; --cellink:#2A2622;
+}
+/* Laundry and Sunbeam keep their light patches in dark theme, but the
+   chrome around the board is dark, so the accent pair has to flip. */
+:root[data-pal="laundry"][data-theme="dark"]{ --accent:#CDBBA0; --accent-soft:#3A342B; }
+:root[data-pal="sunbeam"][data-theme="dark"]{ --accent:#E9A552; --accent-soft:#3E2E18; --gold:#E9A552; }
+@media (prefers-color-scheme: dark){
+  :root[data-pal="laundry"]:not([data-theme="light"]){ --accent:#CDBBA0; --accent-soft:#3A342B; }
+  :root[data-pal="sunbeam"]:not([data-theme="light"]){ --accent:#E9A552; --accent-soft:#3E2E18; --gold:#E9A552; }
 }
 
 *{box-sizing:border-box}
@@ -150,6 +160,8 @@ h1 .p{color:var(--accent)}
   font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
 .readout b{color:var(--ink); font-weight:700}
+.readout span{white-space:nowrap}
+@media (max-width:350px){ .readout{font-size:11.5px; gap:8px} }
 
 /* ===================================================================
    BOARD
@@ -179,9 +191,11 @@ h1 .p{color:var(--accent)}
 .cell:focus-visible{outline:3px solid var(--accent); z-index:4}
 .cell .cat{display:block; animation:pop .2s ease-out}
 .cell .mark{
-  font-size:calc(var(--cell) * .44); color:var(--ink); opacity:.40; font-weight:800;
+  font-size:calc(var(--cell) * .44); color:var(--cellink, var(--ink)); opacity:.40; font-weight:800;
   line-height:1;
 }
+/* an x the game filled in because a placed cat rules the square out */
+.cell .mark.auto{opacity:.2; font-weight:600; font-size:calc(var(--cell) * .36)}
 /* rejected placement: greyed cat, red ring and slash, ~900ms */
 .cell.reject{animation:shake .32s}
 .cell .ghost{display:block; filter:grayscale(1); opacity:.55}
@@ -294,6 +308,24 @@ details.rules li b{color:var(--ink)}
 details.rules .tip{margin:0 0 12px; font-size:12.5px; color:var(--muted)}
 
 footer{font-size:11.5px; color:var(--muted); text-align:center; line-height:1.65}
+
+/* --- daily board (shared times) ------------------------------------ */
+.lb[hidden]{display:none}
+.lb{padding-bottom:6px}
+.lb h3{display:flex; justify-content:space-between; align-items:baseline; gap:10px}
+.lb h3 span{font-size:11px; letter-spacing:0; text-transform:none; font-weight:600}
+.lb ol{list-style:none; margin:4px 0 0; padding:0}
+.lbrow{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--line); font-size:13.5px}
+.lbrow:last-child{border-bottom:0}
+.lbrow .rk{width:22px; flex:0 0 auto; color:var(--muted); font-weight:700; font-variant-numeric:tabular-nums;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12.5px}
+.lbrow .nm{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600}
+.lbrow .tag{flex:0 0 auto; font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--good)}
+.lbrow .tm{flex:0 0 auto; font-weight:700; font-variant-numeric:tabular-nums;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.lbrow.me .nm, .lbrow.me .rk{color:var(--accent)}
+.lb .tip{margin:8px 0 8px; font-size:12.5px; color:var(--muted)}
+.lb .tip:empty{display:none}
 
 /* --- sheets (collection / settings / win) -------------------------- */
 .sheet{
@@ -447,7 +479,7 @@ textarea{
   </div>
 
   <div class="boardwrap">
-    <div class="board" id="board" style="--n:6" role="grid" aria-label="Puzzle board"></div>
+    <div class="board" id="board" style="--n:6" role="grid" aria-label="Puzzle board. Arrow keys move, Enter marks a square, C places a cat."></div>
     <div class="overlay" id="overlay">
       <div class="spinner"></div>
       <h3 id="ovTitle">Waking the cats&hellip;</h3>
@@ -466,6 +498,12 @@ textarea{
     <button class="btn primary" id="newBtn">New</button>
   </div>
 
+  <div class="card lb" id="lbCard" hidden>
+    <h3>Today's times <span id="lbNote"></span></h3>
+    <ol id="lbList"></ol>
+    <p class="tip" id="lbTip"></p>
+  </div>
+
   <details class="rules">
     <summary>How it works</summary>
     <ol>
@@ -476,15 +514,17 @@ textarea{
     </ol>
     <p class="tip">Start from the <b>starter cat</b> with the lock. It is already in the right spot, so it rules out its whole row, column, patch and every square touching it.</p>
     <p class="tip">Tap once to mark a square with &times; &mdash; that is just your own note, it costs nothing. Tap twice on the same square to sit a cat there. Tap a cat to pick it back up. A cat in the wrong square costs a heart. Lose all three and the board is lost: try it again or take a new one.</p>
+    <p class="tip"><b>Auto &times;:</b> when a cat sits down, the squares it rules out get a faint &times; on their own. Those squares cannot take a cat, so tapping one does nothing and costs nothing. You can switch this off in Settings.</p>
     <p class="tip"><b>Hint</b> points at the next square you can work out and tells you why. Tap it again to sit the cat there.</p>
     <p class="tip"><b>Difficulty:</b> Normal gives you extra starter cats, Hard gives you one, Expert gives you none.</p>
+    <p class="tip"><b>Daily board:</b> the Daily puzzle is the same for everyone. If you are signed in, your first solve time of the day goes on the shared board under the puzzle. Restarting is free, but only that first solve counts.</p>
     <p class="tip"><b>Bonus boards</b> show up after every fourth level. One heart, no hints, and a rarer cat if you clear it. Always optional, and they never block your next level.</p>
   </details>
 
   <footer>
     Every puzzle is generated fresh and has exactly one solution.<br>
     No ads, no lives to buy. Plays offline.<br>
-    <span style="opacity:.6">build 10</span>
+    <span style="opacity:.6">build 11</span>
   </footer>
 </div>
 
@@ -513,7 +553,7 @@ textarea{
       <h3>Play</h3>
       <div class="row">
         <div class="lab">Single tap places a cat
-          <span class="hint">Off: tap once for &times;, twice for a cat. On: tap once for a cat, twice for &times;. Faster, but a mis-tap costs a heart straight away.</span>
+          <span class="hint">Off: tap once for &times;, twice for a cat. On: tap once for a cat, tap twice quickly for &times;, tap an &times; to clear it. Faster, but a mis-tap costs a heart.</span>
         </div>
         <button class="sw" id="swInvert" role="switch" aria-checked="false"><i></i></button>
       </div>
@@ -522,6 +562,18 @@ textarea{
           <span class="hint">Off: run out of hearts and the board is lost, so you start it over. On: hearts refill for free and you keep your progress.</span>
         </div>
         <button class="sw" id="swForgive" role="switch" aria-checked="false"><i></i></button>
+      </div>
+      <div class="row">
+        <div class="lab">Auto &times;
+          <span class="hint">When a cat sits down, every square it rules out gets a faint &times; for you: its row, column, patch and the squares touching it. Your own &times; marks are never touched.</span>
+        </div>
+        <button class="sw" id="swAuto" role="switch" aria-checked="false"><i></i></button>
+      </div>
+      <div class="row">
+        <div class="lab">Post my daily time
+          <span class="hint">Shares your first solve time each day, with your name, on the Daily board. Only people you have shared this page with can see it.</span>
+        </div>
+        <button class="sw" id="swPost" role="switch" aria-checked="false"><i></i></button>
       </div>
       <div class="row">
         <div class="lab">Sound
@@ -578,7 +630,7 @@ textarea{
       </div>
     </div>
 
-    <footer>Windowsill Cats. No ads, no analytics, no network. Your save never leaves this device.</footer>
+    <footer>Windowsill Cats. No ads, no analytics. Your save stays on this device. The only thing ever sent anywhere is your daily time, and only if posting is switched on.</footer>
   </div>
 </div>
 
@@ -1271,11 +1323,15 @@ function hintFrom(N, region, catCells){
   var S = newSolveState(N, region);
   for(var k = 0; k < catCells.length; k++) placeCat(S, catCells[k]);
 
-  var guard = 0;
+  // `cuts` counts the eliminations made before the placement fell out. When
+  // it is non-zero, move.why is only true AFTER those eliminations, so the
+  // caller must not present it as a fact about the board the player sees.
+  var guard = 0, cuts = 0;
   while(guard++ < N * N * 12){
-    var move = nextDeduction(S);
+    var move = nextDeduction(S, TECH_LOOKAHEAD);
     if(!move) return null;
-    if(move.kind === "place") return { i: move.i, why: move.why, tech: move.tech };
+    if(move.kind === "place") return { i: move.i, why: move.why, tech: move.tech, cuts: cuts };
+    cuts++;
     for(var m = 0; m < move.cells.length; m++) S.cand[move.cells[m]] = 0;
   }
   return null;
@@ -1418,7 +1474,7 @@ var SKEY = "windowsillcats.v1";
 var DEFAULTS = {
   level:1, freeSize:6, mode:"levels",
   invert:false, sound:false, patterns:false, theme:"auto", palette:"default",
-  diff:"normal", forgiving:false, bonusWins:0,
+  diff:"normal", forgiving:false, bonusWins:0, autoX:true, lbPost:true,
   cats:{},                 // id -> {first:"YYYY-MM-DD", visits:n}
   solved:0, winStreak:0, bestStreak:0,
   bestTime:{}, bestScore:{},
@@ -1427,15 +1483,64 @@ var DEFAULTS = {
 };
 var S = null;
 
+/* Every save, whether read from storage or pasted into Import, goes through
+   here. A field of the wrong type falls back to its default instead of
+   breaking the next win. */
+function isPlain(v){ return !!v && typeof v === "object" && !Array.isArray(v); }
+function sanitize(obj){
+  if(!isPlain(obj)) obj = {};
+  var out = {}, k;
+  for(k in DEFAULTS){
+    var d = DEFAULTS[k], v = obj[k], ok;
+    if(d === null) ok = (typeof v === "string");
+    else if(typeof d === "object") ok = isPlain(v);
+    else if(typeof d === "number") ok = (typeof v === "number" && isFinite(v) && v >= 0);
+    else ok = (typeof v === typeof d);
+    out[k] = ok ? v : clone(d);
+  }
+  out.level = Math.max(1, Math.floor(out.level));
+  ["solved","winStreak","bestStreak","dailyStreak","playStreak","bonusWins"].forEach(function(n){ out[n] = Math.floor(out[n]); });
+  if([6,7,8,9,10].indexOf(out.freeSize) < 0) out.freeSize = 6;
+  if(["levels","daily","free"].indexOf(out.mode) < 0) out.mode = "levels";
+  if(["normal","hard","expert"].indexOf(out.diff) < 0) out.diff = "normal";
+  if(["auto","light","dark"].indexOf(out.theme) < 0) out.theme = "auto";
+  if(!PALETTES.some(function(p){ return p.id === out.palette; })) out.palette = "default";
+
+  var cats = {};
+  ROSTER.forEach(function(c){
+    var e = out.cats[c.id];
+    if(!isPlain(e)) return;
+    cats[c.id] = { first: typeof e.first === "string" ? e.first : today(),
+                   visits: (typeof e.visits === "number" && e.visits >= 1) ? Math.floor(e.visits) : 1 };
+  });
+  out.cats = cats;
+  ["bestTime","bestScore","dailyBest"].forEach(function(n){
+    var clean = {};
+    Object.keys(out[n]).forEach(function(key){
+      var v = out[n][key];
+      if(typeof v === "number" && isFinite(v) && v > 0) clean[key] = v;
+    });
+    out[n] = clean;
+  });
+  var daily = {};
+  Object.keys(out.daily).forEach(function(day){
+    var e = out.daily[day];
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(day) || !isPlain(e) || typeof e.time !== "number" || !(e.time >= 0)) return;
+    var rec = { time: e.time, score: (typeof e.score === "number" && isFinite(e.score)) ? e.score : 0 };
+    if(isPlain(e.first) && typeof e.first.t === "number" && e.first.t > 0){
+      rec.first = { t: e.first.t, s: +e.first.s || 0, c: e.first.c === true };
+    }
+    daily[day] = rec;
+  });
+  out.daily = daily;
+  return out;
+}
 function loadState(){
   var raw = null;
   try{ raw = localStorage.getItem(SKEY); }catch(e){ raw = null; }
   var obj = {};
   if(raw){ try{ obj = JSON.parse(raw) || {}; }catch(e){ obj = {}; } }
-  S = {};
-  for(var k in DEFAULTS){
-    S[k] = (obj[k] !== undefined && obj[k] !== null) ? obj[k] : clone(DEFAULTS[k]);
-  }
+  S = sanitize(obj);
   return S;
 }
 function saveState(){ try{ localStorage.setItem(SKEY, JSON.stringify(S)); }catch(e){} }
@@ -1473,7 +1578,7 @@ var SFX = {
 /* =====================================================================
    GAME STATE
    ===================================================================== */
-var EMPTY = 0, MARK = 1, CAT = 2;
+var EMPTY = 0, MARK = 1, CAT = 2, AUTO = 3;   // AUTO = an x the game placed for you
 var DOUBLE_MS = 700;      // generous on purpose: a real phone double tap is slow
 
 var N = 6, puzzle = null, grid = [], mode = "levels";
@@ -1487,6 +1592,11 @@ var genToken = 0;
 var bonus = false;        // playing an optional one-heart bonus board
 var bonusReady = false;   // just cleared a 4th level, bonus on offer
 var pendingHint = null;   // {i, why} pointed at but not yet placed
+var heartsLost = 0;       // this attempt; a refill does not wipe it
+var labelLevel = 1;       // level the board on screen belongs to
+var labelDay = "";        // date the Daily board on screen was built for
+var pendingPlace = -1, pendingPlaceTimer = null;   // single-tap mode: cat waiting out the double-tap window
+var INVERT_MS = 300;
 
 var DIFF_NAMES = { normal:"Normal", hard:"Hard", expert:"Expert" };
 function diffNow(){
@@ -1499,9 +1609,15 @@ function isGiven(i){ return !!(puzzle && puzzle.givens && puzzle.givens.indexOf(
 function $(id){ return document.getElementById(id); }
 var boardEl = $("board"), overlay = $("overlay"), msgEl = $("msg");
 
-function today(){
-  var d = new Date();
+function ymd(d){
   return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+function today(){ return ymd(new Date()); }
+// A streak only counts while it is still alive: last hit today or yesterday.
+function liveStreak(n, last){
+  if(!n || !last) return 0;
+  var y = new Date(); y.setDate(y.getDate() - 1);
+  return (last === today() || last === ymd(y)) ? n : 0;
 }
 function fmt(ms){
   var s = Math.max(0, Math.floor(ms/1000));
@@ -1526,8 +1642,8 @@ function currentSize(){
 }
 function contextLabel(){
   if(bonus) return "Bonus board · " + N + "×" + N + " · one heart";
-  if(mode === "levels") return "Level " + S.level + " · " + N + "×" + N + " · " + DIFF_NAMES[diffNow()];
-  if(mode === "daily")  return "Daily · " + today();
+  if(mode === "levels") return "Level " + labelLevel + " · " + N + "×" + N + " · " + DIFF_NAMES[diffNow()];
+  if(mode === "daily")  return "Daily · " + (labelDay || today());
   return "Free play · " + N + "×" + N + " · " + DIFF_NAMES[diffNow()];
 }
 
@@ -1628,12 +1744,14 @@ function paint(){
       el.innerHTML = '<span class="cat">' + BOARD_CATS[puzzle.region[i] % BOARD_CATS.length] + '</span>';
     } else if(v === MARK){
       el.innerHTML = '<span class="mark">×</span>';
+    } else if(v === AUTO){
+      el.innerHTML = '<span class="mark auto">×</span>';
     } else {
       el.innerHTML = "";
     }
   }
-  $("undo").disabled = undoStack.length === 0 || locked;
-  $("redo").disabled = redoStack.length === 0 || locked;
+  $("undo").disabled = undoStack.length === 0 || locked || solved;
+  $("redo").disabled = redoStack.length === 0 || locked || solved;
   $("restart").disabled = !puzzle;
   renderHintState();
   updateAria();
@@ -1653,9 +1771,30 @@ function updateAria(){
   var cells = boardEl.children;
   for(var i = 0; i < cells.length; i++){
     var v = grid[i];
-    var what = v === CAT ? (isGiven(i) ? "starter cat, locked" : "cat") : (v === MARK ? "marked empty" : "empty");
+    var what = v === CAT ? (isGiven(i) ? "starter cat, locked" : "cat")
+             : v === MARK ? "marked empty" : v === AUTO ? "ruled out by a cat" : "empty";
     cells[i].setAttribute("aria-label",
       "row " + (rowOf(i)+1) + ", column " + (colOf(i)+1) + ", patch " + (puzzle.region[i]+1) + ", " + what);
+  }
+}
+
+/* Auto x. Every square a placed cat rules out (its row, column, patch and
+   the eight squares touching it) gets a faint x. Rebuilt from scratch from
+   the cats on the board, so picking a cat back up clears exactly its own
+   marks. Only ever fills EMPTY squares: the player's own x marks are kept. */
+function recomputeAuto(){
+  var i, k;
+  for(i = 0; i < grid.length; i++) if(grid[i] === AUTO) grid[i] = EMPTY;
+  if(!S.autoX || !puzzle) return;
+  for(i = 0; i < grid.length; i++){
+    if(grid[i] !== CAT) continue;
+    var r = rowOf(i), c = colOf(i), g = puzzle.region[i];
+    for(k = 0; k < grid.length; k++){
+      if(grid[k] !== EMPTY) continue;
+      var kr = rowOf(k), kc = colOf(k);
+      if(kr === r || kc === c || puzzle.region[k] === g ||
+         (Math.abs(kr - r) <= 1 && Math.abs(kc - c) <= 1)) grid[k] = AUTO;
+    }
   }
 }
 
@@ -1714,18 +1853,57 @@ function handleTap(i){
 
   // A cat is always picked back up by tapping it, in either control scheme.
   if(grid[i] === CAT){
-    pushUndo(); grid[i] = EMPTY; startClock(); SFX.mark();
+    pushUndo(); grid[i] = EMPTY; recomputeAuto(); startClock(); SFX.mark();
     say("Picked that one back up."); paint(); return;
   }
 
+  // An auto x is a square a cat on the board already rules out. A cat there
+  // is always wrong, so a stray tap is ignored rather than costing a heart.
+  if(grid[i] === AUTO){
+    say("A cat on the board already rules that square out.");
+    return;
+  }
+
   if(S.invert){
-    // single tap = cat, double tap = x
-    if(isDouble){ pushUndo(); grid[i] = MARK; startClock(); SFX.mark(); paint(); }
-    else tryPlaceCat(i);
+    // Single tap = cat, quick second tap on the same square = x instead.
+    // The cat waits INVERT_MS before it is committed, so the second tap can
+    // still turn it into an x. Tapping an existing x just clears it.
+    if(pendingPlace === i){
+      cancelPendingPlace();
+      pushUndo(); grid[i] = MARK; startClock(); SFX.mark(); paint();
+      return;
+    }
+    flushPendingPlace();
+    if(locked || solved) return;
+    if(grid[i] === MARK){ pushUndo(); grid[i] = EMPTY; startClock(); SFX.mark(); paint(); return; }
+    pendingPlace = i;
+    pendingPlaceTimer = setTimeout(function(){
+      pendingPlace = -1;
+      if(!locked && !solved && grid[i] === EMPTY && i !== rejectCell) tryPlaceCat(i);
+    }, INVERT_MS);
   } else {
     if(isDouble) tryPlaceCat(i);
     else { pushUndo(); grid[i] = (grid[i] === MARK ? EMPTY : MARK); startClock(); SFX.mark(); paint(); }
   }
+}
+
+function cancelPendingPlace(){ clearTimeout(pendingPlaceTimer); pendingPlace = -1; }
+function flushPendingPlace(){
+  if(pendingPlace < 0) return;
+  var j = pendingPlace;
+  cancelPendingPlace();
+  if(!locked && !solved && grid[j] === EMPTY && j !== rejectCell) tryPlaceCat(j);
+}
+/* Finish a rejection animation right now: the square becomes an x. Called
+   by the timer, and before any new placement so two quick wrong taps can
+   never leave the first square stuck showing the red ring. */
+function finishReject(){
+  if(rejectCell < 0) return;
+  clearTimeout(rejectTimer);
+  var j = rejectCell, cell = boardEl.children[j];
+  rejectCell = -1;
+  if(cell) cell.classList.remove("reject");
+  if(grid[j] !== CAT) grid[j] = MARK;
 }
 
 /* Correctness is checked against the SOLUTION, not merely against the four
@@ -1733,11 +1911,13 @@ function handleTap(i){
    costs a heart - that is what makes three hearts mean anything. */
 function tryPlaceCat(i){
   startClock();
+  finishReject();
   var right = puzzle.cols[rowOf(i)] === colOf(i);
   pushUndo();
 
   if(right){
     grid[i] = CAT;
+    recomputeAuto();
     SFX.place();
     paint();
     announceRegion(i);
@@ -1748,6 +1928,10 @@ function tryPlaceCat(i){
   // --- wrong. Make the rejection impossible to miss: on a 6x6 five of every
   // six squares are wrong, so a silent bounce reads as "tapping does nothing".
   hearts = Math.max(0, hearts - 1);
+  heartsLost++;
+  // Out of hearts: freeze the board now, not when the animation ends, so a
+  // last cat cannot be slipped in for a win and a loss at the same time.
+  if(hearts === 0) locked = true;
   renderHearts();
   SFX.reject();
 
@@ -1762,11 +1946,9 @@ function tryPlaceCat(i){
 
   clearTimeout(rejectTimer);
   rejectTimer = setTimeout(function(){
-    el.classList.remove("reject");
-    rejectCell = -1;
-    grid[i] = MARK;                                 // the wrong square becomes an x
+    finishReject();                                 // the wrong square becomes an x
     paint();
-    if(hearts === 0) gameOver();
+    if(hearts === 0 && !solved) gameOver();
   }, 900);
 }
 
@@ -1786,7 +1968,17 @@ function checkWin(){
   for(var i = 0; i < boardEl.children.length; i++){
     if(grid[i] === CAT) boardEl.children[i].classList.add("solvepop");
   }
-  recordWin();
+  // A board pays out once. Restarting and solving it again is allowed, it
+  // just does not level up, count as a win or bring a cat a second time.
+  if(puzzle.credited){
+    say("<b>Solved again in " + fmt(elapsed) + ".</b> This board was already counted, so no new cat this time.", "win");
+  } else {
+    puzzle.credited = true;
+    recordWin();
+  }
+  // A solved board is final: undoing and re-placing the last cat would
+  // record the win, the level-up and the cat a second time.
+  $("undo").disabled = true; $("redo").disabled = true;
   renderHintState();
   return true;
 }
@@ -1809,7 +2001,7 @@ function gameOver(){
     showOverlay("Out of hearts", "Forgiving hearts is on, so the refill is free. No ad, no wait.", [
       { label:"Refill hearts", primary:true, fn:function(){
           hearts = maxHearts(); locked = false; renderHearts(); hideOverlay();
-          say("Hearts back. Carry on."); startedAt = Date.now() - elapsed; startClock(); paint();
+          say("Hearts back. Carry on."); startedAt = 0; startClock(); paint();
         }},
       { label:"New board", fn:function(){ hideOverlay(); newPuzzle(); }}
     ]);
@@ -1828,33 +2020,46 @@ function scoreFor(){
   var secs = Math.floor(elapsed / 1000);
   var base = N * N * 12;
   var timeBonus = Math.max(0, 540 - secs) * 2;
-  var heartBonus = (bonus ? 3 : hearts) * 260;
+  // hearts LOST this attempt, not hearts showing: a refill is not a clean run
+  var heartBonus = (bonus ? 3 : Math.max(0, 3 - heartsLost)) * 260;
   var hintPenalty = hintsUsed * 160;
   var mult = bonus ? 2 : ({ normal:1, hard:1.35, expert:1.75 }[diffNow()] || 1);
   return Math.max(0, Math.round((base + timeBonus + heartBonus - hintPenalty) * mult));
 }
 
-function bestKey(){ return bonus ? "bonus" : "d:" + diffNow(); }
+function bestKey(){ return bonus ? "bonus" : mode === "daily" ? "daily" : "d:" + diffNow(); }
 
 function recordWin(){
   var diff = puzzle.difficulty;
   var key = bestKey();
   var score = scoreFor();
-  var clean = (hearts === maxHearts() && hintsUsed === 0);
-  var day = today();
+  var clean = (heartsLost === 0 && hintsUsed === 0);
+  // The Daily is filed under the date its board was built for, so finishing
+  // a minute after midnight does not count yesterday's board as today's.
+  var day = (mode === "daily" && puzzle.day) ? puzzle.day : today();
   var wasBonus = bonus;
   pendingHint = null;
+
+  // Today's Daily already counted (earlier today, maybe before a reload):
+  // keep the better time and score, but no second win, streak bump or cat.
+  if(mode === "daily" && S.daily[day]){
+    if(elapsed < S.daily[day].time) S.daily[day].time = elapsed;
+    if(score > S.daily[day].score) S.daily[day].score = score;
+    saveState(); renderBest();
+    say("<b>Solved again in " + fmt(elapsed) + ".</b> This Daily was already counted, and your first time is the one on the board.", "win");
+    return;
+  }
 
   S.solved++;
   S.winStreak++;
   if(S.winStreak > S.bestStreak) S.bestStreak = S.winStreak;
 
   // daily play streak
-  if(S.lastPlayed !== day){
+  var nowDay = today();
+  if(S.lastPlayed !== nowDay){
     var y = new Date(); y.setDate(y.getDate() - 1);
-    var yesterday = y.getFullYear() + "-" + String(y.getMonth()+1).padStart(2,"0") + "-" + String(y.getDate()).padStart(2,"0");
-    S.playStreak = (S.lastPlayed === yesterday) ? S.playStreak + 1 : 1;
-    S.lastPlayed = day;
+    S.playStreak = (S.lastPlayed === ymd(y)) ? S.playStreak + 1 : 1;
+    S.lastPlayed = nowDay;
   }
 
   var isBestTime = !S.bestTime[key] || elapsed < S.bestTime[key];
@@ -1863,15 +2068,10 @@ function recordWin(){
   if(isBestScore) S.bestScore[key] = score;
 
   if(mode === "daily"){
-    if(!S.daily[day]) S.daily[day] = { time: elapsed, score: score };
-    else {
-      if(elapsed < S.daily[day].time) S.daily[day].time = elapsed;
-      if(score > S.daily[day].score) S.daily[day].score = score;
-    }
+    S.daily[day] = { time: elapsed, score: score, first: { t: elapsed, s: score, c: clean } };
     if(S.lastDaily !== day){
-      var d2 = new Date(); d2.setDate(d2.getDate() - 1);
-      var yd = d2.getFullYear() + "-" + String(d2.getMonth()+1).padStart(2,"0") + "-" + String(d2.getDate()).padStart(2,"0");
-      S.dailyStreak = (S.lastDaily === yd) ? S.dailyStreak + 1 : 1;
+      var d2 = new Date(day + "T12:00:00"); d2.setDate(d2.getDate() - 1);
+      S.dailyStreak = (S.lastDaily === ymd(d2)) ? S.dailyStreak + 1 : 1;
       S.lastDaily = day;
     }
   }
@@ -1889,12 +2089,13 @@ function recordWin(){
   var after = Object.keys(S.cats).length;
 
   saveState();
-  renderBest(); renderCatDot(); renderContext();
+  renderBest(); renderCatDot();
+  if(mode === "daily") lbFlush(day);
 
   var bits = [];
   bits.push("<b>" + (wasBonus ? "Bonus board cleared" : "Solved") + " in " + fmt(elapsed) + ".</b>");
   bits.push(score.toLocaleString() + " points" + (isBestScore ? ", best yet" : "") + ".");
-  if(isBestTime && !wasBonus) bits.push("Fastest " + DIFF_NAMES[diffNow()] + " so far.");
+  if(isBestTime && !wasBonus && mode !== "daily") bits.push("Fastest " + DIFF_NAMES[diffNow()] + " so far.");
   if(clean && !wasBonus) bits.push("Clean run, no hints, no hearts lost.");
   if(bonusReady) bits.push("Bonus board unlocked: one heart, no hints, rarer cat. Tap New to skip it.");
   say("<span>" + bits.join(" ") + "</span>" +
@@ -1921,8 +2122,10 @@ function recordWin(){
 function tierForBoard(size, diff, clean, isBonus){
   var tier = (size >= 10) ? 2 : (size >= 8 ? 1 : 0);   // 0 = up to Uncommon, 1 = +Rare, 2 = +Legendary
   if(diff === "Hard") tier++;
-  if(clean) tier++;
+  // A bonus board is one heart and no hints, so winning it is always "clean".
+  // It gets its own bump, not both, or a 6x6 bonus could reach Legendary.
   if(isBonus) tier++;
+  else if(clean) tier++;
   return Math.min(3, tier);
 }
 function awardCat(diff, clean, isBonus){
@@ -2061,6 +2264,7 @@ $("reveal").addEventListener("click", hideReveal);
    says why, without touching the board. Second tap sits the cat there.
    Only the first tap counts as a hint used. */
 $("hint").onclick = function(){
+  flushPendingPlace();
   if(!puzzle || solved || locked || bonus) return;
   startClock();
 
@@ -2069,6 +2273,7 @@ $("hint").onclick = function(){
     pendingHint = null;
     pushUndo();
     grid[p] = CAT;
+    recomputeAuto();
     paint(); pulse(p); announceRegion(p); SFX.place();
     if(!checkWin()) say("Cat placed. <b>" + (N - catCells().length) + "</b> to go.");
     return;
@@ -2079,7 +2284,10 @@ $("hint").onclick = function(){
     hintsUsed++;
     pendingHint = { i: h.i };
     paint();
-    say("Look at row " + (rowOf(h.i)+1) + ", column " + (colOf(h.i)+1) + ": " + h.why +
+    say("Look at row " + (rowOf(h.i)+1) + ", column " + (colOf(h.i)+1) + ": " +
+        (h.cuts ? "once you rule out the squares the other rows, columns and patches make impossible, " +
+                  "this is the only spot left for its row, column or patch"
+                : h.why) +
         ". Tap <b>Place it</b> to sit the cat there.");
     return;
   }
@@ -2120,37 +2328,54 @@ boardEl.addEventListener("keydown", function(e){
   else if(e.key === "ArrowDown") r++;
   else if(e.key === "ArrowLeft") c--;
   else if(e.key === "ArrowRight") c++;
-  else if(e.key === " " || e.key === "Enter"){
+  else if(e.key === "c" || e.key === "C" || (e.key === "Enter" && e.shiftKey)){
     e.preventDefault();
-    cycleCell(i);
+    cycleCell(i, true);
+    return;
+  } else if(e.key === " " || e.key === "Enter"){
+    e.preventDefault();
+    cycleCell(i, false);
     return;
   } else return;
   e.preventDefault();
   if(r < 0 || r >= N || c < 0 || c >= N) return;
   boardEl.children[r*N+c].focus();
 });
-// Keyboard cycles empty -> x -> cat -> empty, so every state is reachable
-// without needing a double tap.
-function cycleCell(i){
+// Some browsers also fire a click when Space is released on a button, which
+// would undo the x that keydown just placed.
+boardEl.addEventListener("keyup", function(e){
+  if(e.key === " " && e.target.closest(".cell")) e.preventDefault();
+});
+// Keyboard mirrors the tap rules without needing a double tap: Enter or
+// Space toggles the free x note (and picks a cat back up), C or Shift+Enter
+// commits a cat. Marking and unmarking never costs a heart.
+function cycleCell(i, wantCat){
   if(locked || solved || !puzzle || i === rejectCell) return;
   if(isGiven(i)){ say("That is a starter cat. It is already right and it stays put."); return; }
-  if(grid[i] === EMPTY){ pushUndo(); grid[i] = MARK; startClock(); SFX.mark(); paint(); }
-  else if(grid[i] === MARK){ tryPlaceCat(i); }
-  else { pushUndo(); grid[i] = EMPTY; SFX.mark(); paint(); }
+  if(grid[i] === AUTO){ say("A cat on the board already rules that square out."); return; }
+  if(grid[i] === CAT){
+    pushUndo(); grid[i] = EMPTY; recomputeAuto(); startClock(); SFX.mark();
+    say("Picked that one back up."); paint();
+  }
+  else if(wantCat) tryPlaceCat(i);
+  else { pushUndo(); grid[i] = (grid[i] === MARK ? EMPTY : MARK); startClock(); SFX.mark(); paint(); }
 }
 
 $("undo").onclick = function(){
-  if(!undoStack.length || locked) return;
+  cancelPendingPlace();
+  if(!undoStack.length || locked || solved) return;
   redoStack.push(grid.slice());
   grid = undoStack.pop();
-  solved = false;
+  recomputeAuto();
   paint();
   say("Undone. Hearts stay spent.");
 };
 $("redo").onclick = function(){
-  if(!redoStack.length || locked) return;
+  cancelPendingPlace();
+  if(!redoStack.length || locked || solved) return;
   undoStack.push(grid.slice());
   grid = redoStack.pop();
+  recomputeAuto();
   paint();
   if(!checkWin()) say("Redone.");
 };
@@ -2196,6 +2421,7 @@ function setMode(m){
   syncSeg(".seg", "mode", m);
   $("sizePick").hidden = (m !== "free");
   $("diffPick").hidden = (m === "daily");
+  renderBoardCard();
   newPuzzle();
 }
 
@@ -2223,8 +2449,9 @@ function hideOverlay(){ overlay.classList.remove("on"); }
 
 // Fresh attempt state: full hearts, clock at zero, only starter cats down.
 function resetAttempt(){
-  hearts = maxHearts(); hintsUsed = 0; solved = false; locked = false;
+  hearts = maxHearts(); hintsUsed = 0; heartsLost = 0; solved = false; locked = false;
   undoStack = []; redoStack = []; completedRegions = {}; pendingHint = null;
+  cancelPendingPlace();
   startedAt = 0; elapsed = 0; stopClock();
   lastTapCell = -1; rejectCell = -1; clearTimeout(rejectTimer);
   $("timer").textContent = "0:00";
@@ -2236,6 +2463,7 @@ function freshGrid(){
     grid[i] = CAT;
     completedRegions[puzzle.region[i]] = true;
   });
+  recomputeAuto();
 }
 function startMessage(){
   var g = puzzle.givens ? puzzle.givens.length : 0;
@@ -2243,7 +2471,7 @@ function startMessage(){
            : g === 1 ? "Start from the starter cat with the lock. "
            : g > 1 ? "Start from the " + g + " starter cats with locks. "
            : "No starter cats on Expert. ";
-  return lead + (S.invert ? "Tap once to sit a cat down, twice for ×."
+  return lead + (S.invert ? "Tap once to sit a cat down, twice quickly for ×."
                           : "Tap once for ×, twice to sit a cat there.");
 }
 // Same board, same starter cats, fresh hearts and clock.
@@ -2263,6 +2491,9 @@ function newPuzzle(opts){
   bonus = !!(opts && opts.bonus);
   bonusReady = false;
   N = currentSize();
+  labelLevel = S.level;
+  labelDay = today();
+  var genDay = labelDay;
   boardEl.style.setProperty("--n", N);
   renderContext();
   renderBest();
@@ -2280,8 +2511,9 @@ function newPuzzle(opts){
     if(myToken !== genToken) return;
     var p, rnd = Math.random, diff = diffNow();
     if(mode === "daily"){
-      rnd = mulberry32(hashSeed("windowsill-" + today()));
+      rnd = mulberry32(hashSeed("windowsill-" + genDay));
       p = generate(8, rnd);
+      if(p) p.day = genDay;
     } else if(cache[N]){
       p = cache[N]; cache[N] = null;
     } else {
@@ -2333,14 +2565,170 @@ function renderContext(){
 }
 function renderBest(){
   if(mode === "daily"){
-    var d = S.daily[today()];
-    $("bestWrap").innerHTML = "streak <b>" + (S.dailyStreak || 0) + "</b>" +
+    var d = S.daily[labelDay || today()];
+    $("bestWrap").innerHTML = "streak <b>" + liveStreak(S.dailyStreak, S.lastDaily) + "</b>" +
       (d ? " &middot; today <b>" + fmt(d.time) + "</b>" : "");
     return;
   }
   var key = bestKey();
   var t = S.bestTime[key] ? fmt(S.bestTime[key]) : "—";
   $("bestWrap").innerHTML = "best <b id='best'>" + t + "</b>";
+}
+
+/* =====================================================================
+   DAILY BOARD - shared times for today's Daily puzzle.
+
+   Only exists when the page is opened on claude.ai by someone signed in;
+   anywhere else (a saved file, a signed-out visitor) the card stays hidden
+   and the game is exactly as it was. One document per person at
+   scores/<their id>, holding their FIRST solve of each of the last 14
+   days: { days: { "YYYY-MM-DD": { t: ms, s: score, c: cleanRun } } }.
+   Access rules let everyone read and each person write only their own.
+   Only ids are stored; names are looked up fresh on every draw.
+
+   Everything read back is other people's input: numbers are range-checked
+   and names go in with textContent.
+   ===================================================================== */
+var LB = { db:null, user:null, uid:null, rows:null, state:"off",
+           timer:null, canPost:true, posting:false, posted:{} };
+var LB_KEEP_DAYS = 14;
+var lbDraw = 0;
+
+function lbInit(){
+  if(LB.state !== "off") return;
+  if(!window.claude || typeof window.claude.use !== "function") return;
+  LB.state = "wait";
+  Promise.all([window.claude.use("db"), window.claude.use("user")]).then(function(r){
+    LB.db = r[0]; LB.user = r[1];
+    if(!LB.db){ LB.state = "none"; return; }
+    LB.state = "loading";
+    renderBoardCard();
+    (LB.user ? LB.user.id() : Promise.resolve(null)).then(function(id){
+      LB.uid = id || null;
+      lbFlush();
+      renderBoardCard();
+    });
+    // Subscribed exactly once for the life of the page.
+    LB.timer = setTimeout(function(){
+      LB.timer = null;
+      if(LB.state === "loading"){ LB.state = "slow"; renderBoardCard(); }
+    }, 10000);
+    LB.db.collection("scores").limit(500).onSnapshot(function(snap){
+      if(!snap.metadata.fromCache && LB.timer){ clearTimeout(LB.timer); LB.timer = null; }
+      LB.rows = snap.docs.map(function(d){ return { id: d.id, data: d.data() || {} }; });
+      LB.state = "ready";
+      renderBoardCard();
+    }, function(){
+      if(LB.timer){ clearTimeout(LB.timer); LB.timer = null; }
+      LB.state = "error";
+      renderBoardCard();
+    });
+  }, function(){ LB.state = "none"; });
+}
+
+function lbCutoff(){
+  var d = new Date(); d.setDate(d.getDate() - (LB_KEEP_DAYS - 1));
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+
+/* Post today's first solve if it is not on the board yet. Safe to call any
+   time: it does nothing without a signed-in viewer, with posting switched
+   off, or once today's time is already up. One write, never in a loop. */
+function lbFlush(day){
+  day = day || today();
+  var mine = S.daily && S.daily[day] && S.daily[day].first;
+  if(!LB.db || !LB.uid || !S.lbPost || !LB.canPost || LB.posting || LB.posted[day]) return;
+  if(!mine || typeof mine.t !== "number" || !(mine.t > 0)) return;
+  LB.posting = true;
+  var ref = LB.db.collection("scores").doc(LB.uid);
+  ref.get().then(function(snap){
+    var old = (snap.exists && snap.data() && snap.data().days) || {};
+    if(old[day]){ LB.posted[day] = true; return null; }      // first solve stands
+    var days = {}, cut = lbCutoff();
+    Object.keys(old).forEach(function(k){
+      if(/^\d{4}-\d{2}-\d{2}$/.test(k) && k >= cut) days[k] = old[k];
+    });
+    days[day] = { t: Math.round(mine.t), s: Math.round(+mine.s || 0), c: !!mine.c };
+    return ref.set({ v: 1, days: days }).then(function(){ LB.posted[day] = true; });
+  }).then(function(){
+    LB.posting = false; renderBoardCard();
+  }, function(e){
+    LB.posting = false;
+    // A refused write means this account can read the board but not add to it.
+    if(e && e.code === "invalid_argument") LB.canPost = false;
+    renderBoardCard();
+  });
+}
+
+/* The tab came back on a new date: deal the new Daily, unless a game is in
+   progress, in which case it finishes under the date it started on. */
+document.addEventListener("visibilitychange", function(){
+  if(document.hidden || mode !== "daily" || !puzzle || !puzzle.day || puzzle.day === today()) return;
+  var given = puzzle.givens ? puzzle.givens.length : 0;
+  if(solved || locked || catCells().length <= given) newPuzzle();
+  renderBoardCard();
+});
+
+function renderBoardCard(){
+  var card = $("lbCard");
+  if(!card) return;
+  if(mode !== "daily" || !LB.db){ card.hidden = true; return; }
+  card.hidden = false;
+
+  var day = today(), entries = [];
+  (LB.rows || []).forEach(function(r){
+    var e = r.data && r.data.days && r.data.days[day];
+    if(!e || typeof e.t !== "number" || !isFinite(e.t) || e.t < 1000 || e.t > 86400000) return;
+    entries.push({ id: String(r.id), t: e.t, c: e.c === true });
+  });
+  entries.sort(function(a, b){ return a.t - b.t; });
+
+  var note = "", tip = "";
+  if(LB.state === "loading") note = "Loading…";
+  else if(LB.state === "slow") note = LB.rows ? "May be out of date" : "Can't reach the board yet";
+  else if(LB.state === "error") note = "Board unavailable right now";
+  else note = entries.length + (entries.length === 1 ? " solver" : " solvers");
+  if(LB.state === "ready" && !entries.length) tip = "No times yet today. Solve the Daily to post the first one.";
+  if(!LB.uid && LB.state !== "loading") tip = "Sign in on claude.ai to post your time.";
+  else if(!LB.canPost) tip = "This account can see the board but cannot post times to it.";
+  else if(!S.lbPost) tip = "Posting is off. Turn on “Post my daily time” in Settings to join in.";
+  $("lbNote").textContent = note;
+  $("lbTip").textContent = tip;
+
+  // top ten, plus your own row if you are further down
+  var show = entries.slice(0, 10);
+  var myRank = -1;
+  for(var i = 0; i < entries.length; i++) if(entries[i].id === LB.uid){ myRank = i; break; }
+  if(myRank >= 10) show.push(entries[myRank]);
+
+  var token = ++lbDraw;
+  var ids = show.map(function(e){ return e.id; });
+  var lookup = (LB.user && ids.length) ? LB.user.profiles(ids) : Promise.resolve({});
+  lookup.then(function(ps){
+    if(token !== lbDraw) return;                 // a newer draw superseded this one
+    var list = $("lbList");
+    list.textContent = "";
+    show.forEach(function(e){
+      var li = document.createElement("li");
+      var isMe = e.id === LB.uid;
+      li.className = "lbrow" + (isMe ? " me" : "");
+      var rk = document.createElement("span"); rk.className = "rk";
+      rk.textContent = String(entries.indexOf(e) + 1);
+      var nm = document.createElement("span"); nm.className = "nm";
+      var prof = ps && ps[e.id];
+      nm.textContent = ((prof && prof.name) || "Someone") + (isMe ? " (you)" : "");
+      li.appendChild(rk); li.appendChild(nm);
+      if(e.c){
+        var tag = document.createElement("span"); tag.className = "tag";
+        tag.textContent = "clean"; tag.title = "No hints, no hearts lost";
+        li.appendChild(tag);
+      }
+      var tm = document.createElement("span"); tm.className = "tm";
+      tm.textContent = fmt(e.t);
+      li.appendChild(tm);
+      list.appendChild(li);
+    });
+  });
 }
 
 /* =====================================================================
@@ -2380,8 +2768,9 @@ function renderStats(){
   var rows = [
     ["Puzzles solved", S.solved],
     ["Win streak", S.winStreak + (S.bestStreak ? " (best " + S.bestStreak + ")" : "")],
-    ["Daily streak", S.dailyStreak || 0],
-    ["Days played in a row", S.playStreak || 0],
+    ["Daily streak", liveStreak(S.dailyStreak, S.lastDaily)],
+    ["Days played in a row", liveStreak(S.playStreak, S.lastPlayed)],
+    ["Best Daily time", S.bestTime.daily ? fmt(S.bestTime.daily) : "—"],
     ["Bonus boards cleared", S.bonusWins || 0],
     ["Best bonus time", S.bestTime.bonus ? fmt(S.bestTime.bonus) : "—"]
   ];
@@ -2390,6 +2779,10 @@ function renderStats(){
     rows.push(["Best " + nm + " time", S.bestTime[k] ? fmt(S.bestTime[k]) : "—"]);
     rows.push(["Best " + nm + " score", S.bestScore[k] ? S.bestScore[k].toLocaleString() : "—"]);
   });
+  // times set before difficulty levels existed, kept so they are not lost
+  ["Easy","Medium","Hard"].forEach(function(d){
+    if(S.bestTime[d]) rows.push(["Earlier best (" + d + ")", fmt(S.bestTime[d])]);
+  });
   $("statGrid").innerHTML = rows.map(function(r){
     return '<div class="stat"><div class="k">' + r[0] + '</div><div class="v">' + r[1] + "</div></div>";
   }).join("");
@@ -2397,11 +2790,36 @@ function renderStats(){
 
 $("openCats").onclick = function(){ renderCollection(); $("catsSheet").classList.add("on"); };
 $("closeCats").onclick = function(){ $("catsSheet").classList.remove("on"); };
-$("openSet").onclick = function(){
+function syncSettings(){
   setSwitch($("swInvert"), S.invert); setSwitch($("swSound"), S.sound); setSwitch($("swPat"), S.patterns);
   setSwitch($("swForgive"), S.forgiving);
+  setSwitch($("swAuto"), S.autoX); setSwitch($("swPost"), S.lbPost);
   syncSeg("#themePick", "theme", S.theme);
   renderPalettes(); renderStats();
+}
+// Every picker on the main screen, from the save.
+function syncPickers(){
+  mode = S.mode;
+  syncSeg(".seg", "mode", mode);
+  syncSeg("#sizePick", "size", S.freeSize);
+  syncSeg("#diffPick", "diff", S.diff);
+  $("sizePick").hidden = (mode !== "free");
+  $("diffPick").hidden = (mode === "daily");
+}
+/* After Import or Erase the save is a different one, so the board on screen
+   belongs to the old save. Persist the new one, re-sync every control and
+   deal a fresh board from it. */
+function adoptState(){
+  saveState();
+  applyTheme(); renderCatDot();
+  syncPickers(); syncSettings();
+  LB.posted = {};
+  renderBoardCard();
+  newPuzzle();
+  lbFlush();
+}
+$("openSet").onclick = function(){
+  syncSettings();
   $("backup").value = "";
   $("setSheet").classList.add("on");
 };
@@ -2409,6 +2827,15 @@ $("closeSet").onclick = function(){ $("setSheet").classList.remove("on"); };
 
 $("swInvert").onclick = function(){ S.invert = !S.invert; setSwitch(this, S.invert); saveState(); };
 $("swForgive").onclick = function(){ S.forgiving = !S.forgiving; setSwitch(this, S.forgiving); saveState(); };
+$("swAuto").onclick = function(){
+  S.autoX = !S.autoX; setSwitch(this, S.autoX); saveState();
+  if(puzzle && grid.length){ recomputeAuto(); paint(); }
+};
+$("swPost").onclick = function(){
+  S.lbPost = !S.lbPost; setSwitch(this, S.lbPost); saveState();
+  if(S.lbPost) lbFlush();
+  renderBoardCard();
+};
 $("swSound").onclick = function(){
   S.sound = !S.sound; setSwitch(this, S.sound); saveState();
   if(S.sound) SFX.place();
@@ -2433,15 +2860,18 @@ $("doImport").onclick = function(){
   if(!txt){ flashSet("Paste a save into the box first."); return; }
   var obj;
   try{ obj = JSON.parse(txt); }catch(e){ flashSet("That is not valid save data."); return; }
-  if(typeof obj !== "object" || obj === null){ flashSet("That is not valid save data."); return; }
-  for(var k in DEFAULTS) if(obj[k] !== undefined) S[k] = obj[k];
-  saveState(); applyTheme(); renderCatDot(); renderPalettes(); renderStats();
-  flashSet("Imported. " + Object.keys(S.cats || {}).length + " cats restored.");
+  if(!isPlain(obj)){ flashSet("That is not valid save data."); return; }
+  var merged = {};
+  for(var k in DEFAULTS) merged[k] = (obj[k] !== undefined) ? obj[k] : S[k];
+  S = sanitize(merged);
+  adoptState();
+  flashSet("Imported. " + Object.keys(S.cats).length + " cats restored.");
 };
 $("doReset").onclick = function(){
   if(!window.confirm("Erase every cat, stat and streak on this device? This cannot be undone.")) return;
   try{ localStorage.removeItem(SKEY); }catch(e){}
-  S = null; loadState(); applyTheme(); renderCatDot(); renderPalettes(); renderStats();
+  S = null; loadState();
+  adoptState();
   flashSet("Erased.");
 };
 function flashSet(t){
@@ -2465,13 +2895,9 @@ function boot(){
   loadState();
   applyTheme();
   renderCatDot();
-  mode = S.mode || "levels";
-  syncSeg(".seg", "mode", mode);
-  syncSeg("#sizePick", "size", S.freeSize);
-  syncSeg("#diffPick", "diff", S.diff);
-  $("sizePick").hidden = (mode !== "free");
-  $("diffPick").hidden = (mode === "daily");
+  syncPickers();
   newPuzzle();
+  lbInit();
 }
 
 /* =====================================================================
