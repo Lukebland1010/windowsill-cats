@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- three board patches, in the game's own patch colours -->
+  <rect width="1024" height="1024" fill="#A5DCC1"/>
+  <path d="M682 0H1024V1024H0V682H682Z" fill="#FAEDA4"/>
+  <rect x="682" y="0" width="342" height="341" fill="#A6D6EE"/>
+  <!-- thin grid lines -->
+  <g stroke="#16201E" stroke-opacity=".16" stroke-width="6">
+    <path d="M341 0V1024M682 0V1024M0 341H1024M0 682H1024"/>
+  </g>
+  <!-- thick patch borders, like the board -->
+  <g fill="none" stroke="#16201E" stroke-width="24" stroke-linejoin="miter">
+    <path d="M682 0V682H0"/>
+    <path d="M682 341H1024"/>
+  </g>
+  <!-- the cat -->
+  <g>
+    <path d="M286 500L318 232L512 410Z" fill="#16201E"/>
+    <path d="M738 500L706 232L512 410Z" fill="#16201E"/>
+    <path d="M338 420L350 300L436 378Z" fill="#E294B3"/>
+    <path d="M686 420L674 300L588 378Z" fill="#E294B3"/>
+    <ellipse cx="512" cy="590" rx="262" ry="222" fill="#16201E"/>
+    <ellipse cx="414" cy="572" rx="46" ry="56" fill="#FAEDA4"/>
+    <ellipse cx="610" cy="572" rx="46" ry="56" fill="#FAEDA4"/>
+    <ellipse cx="414" cy="574" rx="15" ry="40" fill="#16201E"/>
+    <ellipse cx="610" cy="574" rx="15" ry="40" fill="#16201E"/>
+    <path d="M488 652H536L512 680Z" fill="#E294B3"/>
+    <path d="M512 680Q512 716 474 714M512 680Q512 716 550 714" fill="none" stroke="#FCFDFC" stroke-width="9" stroke-linecap="round"/>
+    <g stroke="#FCFDFC" stroke-width="7" stroke-linecap="round" stroke-opacity=".85">
+      <path d="M372 664L262 640M372 688L262 708M652 664L762 640M652 688L762 708"/>
+    </g>
+  </g>
+</svg>
