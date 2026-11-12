@@ -175,7 +175,7 @@ h1 .p{color:var(--accent)}
   --cell:40px;
   position:relative; display:block;
   aspect-ratio:1/1; width:100%;
-  border:3px solid var(--regionline); border-radius:var(--radius); overflow:hidden;
+  border:1px solid var(--gridline); border-radius:var(--radius); overflow:hidden;
   background:var(--surface); box-shadow:var(--shadow);
   touch-action:manipulation; user-select:none; -webkit-user-select:none;
 }
@@ -193,12 +193,16 @@ h1 .p{color:var(--accent)}
 .board.dragx{touch-action:none}
 .cell:focus-visible{outline:3px solid var(--accent); z-index:4}
 .cell .cat{display:block; animation:pop .2s ease-out}
+/* Bold white x. White on a pale pastel patch has almost no contrast of its
+   own, so a soft dark edge is drawn round the glyph to keep it readable on
+   every patch colour in both themes. */
 .cell .mark{
-  font-size:calc(var(--cell) * .44); color:var(--cellink, var(--ink)); opacity:.82; font-weight:800;
+  font-size:calc(var(--cell) * .50); color:#fff; opacity:1; font-weight:900;
   line-height:1;
+  text-shadow:0 0 1px rgba(0,0,0,.75), 0 0 3px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.35);
 }
 /* an x the game filled in because a placed cat rules the square out */
-.cell .mark.auto{opacity:.46; font-weight:600; font-size:calc(var(--cell) * .36)}
+.cell .mark.auto{opacity:.78; font-weight:800; font-size:calc(var(--cell) * .34)}
 /* rejected placement: greyed cat, red ring and slash, ~900ms */
 .cell.reject{animation:shake .32s}
 .cell .ghost{display:block; filter:grayscale(1); opacity:.55}
@@ -528,7 +532,7 @@ textarea{
   <footer>
     Every puzzle is generated fresh and has exactly one solution.<br>
     No ads, no lives to buy. Plays offline.<br>
-    <span style="opacity:.6">build 14</span>
+    <span style="opacity:.6">build 15</span>
   </footer>
 </div>
 
@@ -1733,13 +1737,9 @@ function buildBoard(){
       b.dataset.i = i; b.dataset.g = g % 10;
       b.setAttribute("role", "gridcell");
       b.style.backgroundColor = "var(" + "--r" + (g % 10) + ")";
-      // region edges thick, interior grid lines thin
-      var sh = [];
-      sh.push(edgeShadow(r-1, c, g, "0 2px 0 0", "0 1px 0 0"));
-      sh.push(edgeShadow(r+1, c, g, "0 -2px 0 0", "0 -1px 0 0"));
-      sh.push(edgeShadow(r, c-1, g, "2px 0 0 0", "1px 0 0 0"));
-      sh.push(edgeShadow(r, c+1, g, "-2px 0 0 0", "-1px 0 0 0"));
-      b.style.boxShadow = sh.join(",");
+      // Patches are told apart by colour alone: no heavy border between
+      // them, just the same thin grid line around every square.
+      b.style.boxShadow = "inset 0 0 0 1px var(--gridline)";
       frag.appendChild(b);
     }
   }
@@ -1747,10 +1747,6 @@ function buildBoard(){
   lastSized = "";          // force a fresh measure for the new cell set
   sizeBoard();
   updateAria();
-}
-function edgeShadow(nr, nc, g, thick, thin){
-  var outside = (nr < 0 || nr >= N || nc < 0 || nc >= N) || puzzle.region[nr*N+nc] !== g;
-  return "inset " + (outside ? thick + " var(--regionline)" : thin + " var(--gridline)");
 }
 
 function paint(){
