@@ -194,11 +194,11 @@ h1 .p{color:var(--accent)}
 .cell:focus-visible{outline:3px solid var(--accent); z-index:4}
 .cell .cat{display:block; animation:pop .2s ease-out}
 .cell .mark{
-  font-size:calc(var(--cell) * .44); color:var(--cellink, var(--ink)); opacity:.40; font-weight:800;
+  font-size:calc(var(--cell) * .44); color:var(--cellink, var(--ink)); opacity:.82; font-weight:800;
   line-height:1;
 }
 /* an x the game filled in because a placed cat rules the square out */
-.cell .mark.auto{opacity:.2; font-weight:600; font-size:calc(var(--cell) * .36)}
+.cell .mark.auto{opacity:.46; font-weight:600; font-size:calc(var(--cell) * .36)}
 /* rejected placement: greyed cat, red ring and slash, ~900ms */
 .cell.reject{animation:shake .32s}
 .cell .ghost{display:block; filter:grayscale(1); opacity:.55}
@@ -528,7 +528,7 @@ textarea{
   <footer>
     Every puzzle is generated fresh and has exactly one solution.<br>
     No ads, no lives to buy. Plays offline.<br>
-    <span style="opacity:.6">build 13</span>
+    <span style="opacity:.6">build 14</span>
   </footer>
 </div>
 
