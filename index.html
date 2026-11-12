@@ -517,7 +517,7 @@ textarea{
     </ol>
     <p class="tip">Start from the <b>starter cat</b> with the lock. It is already in the right spot, so it rules out its whole row, column, patch and every square touching it.</p>
     <p class="tip">Tap once to mark a square with &times; &mdash; that is just your own note, it costs nothing. Tap twice on the same square to sit a cat there. Tap a cat to pick it back up. A cat in the wrong square costs a heart. Lose all three and the board is lost: try it again or take a new one.</p>
-    <p class="tip"><b>Drag to mark:</b> slide your finger across the board and every empty square it crosses gets an &times;. Start the drag on an &times; and it rubs marks out instead. Dragging never places a cat, so it can never cost a heart.</p>
+    <p class="tip"><b>Drag to mark:</b> slide your finger across the board and every empty square it crosses gets an &times;. Start the drag on an &times; and it rubs marks out instead. A drag keeps to the row or column it sets off along, so it will not spill into the next one (you can switch that off in Settings). Dragging never places a cat, so it can never cost a heart.</p>
     <p class="tip"><b>Auto &times;:</b> when a cat sits down, the squares it rules out get a faint &times; on their own. Those squares cannot take a cat, so tapping one does nothing and costs nothing. You can switch this off in Settings.</p>
     <p class="tip"><b>Hint</b> points at the next square you can work out and tells you why. Tap it again to sit the cat there.</p>
     <p class="tip"><b>Difficulty:</b> Normal gives you extra starter cats, Hard gives you one, Expert gives you none.</p>
@@ -528,7 +528,7 @@ textarea{
   <footer>
     Every puzzle is generated fresh and has exactly one solution.<br>
     No ads, no lives to buy. Plays offline.<br>
-    <span style="opacity:.6">build 12</span>
+    <span style="opacity:.6">build 13</span>
   </footer>
 </div>
 
@@ -572,6 +572,12 @@ textarea{
           <span class="hint">Slide a finger across the board to mark every square it crosses. Start on an &times; to rub marks out instead. While this is on, the page does not scroll from inside the board.</span>
         </div>
         <button class="sw" id="swDrag" role="switch" aria-checked="false"><i></i></button>
+      </div>
+      <div class="row">
+        <div class="lab">Straight drags
+          <span class="hint">A drag stays in the row or column it sets off along, so a wobbly finger cannot leave stray marks next door. Off: marks follow your finger anywhere, diagonals included.</span>
+        </div>
+        <button class="sw" id="swStraight" role="switch" aria-checked="false"><i></i></button>
       </div>
       <div class="row">
         <div class="lab">Auto &times;
@@ -1484,7 +1490,7 @@ var SKEY = "windowsillcats.v1";
 var DEFAULTS = {
   level:1, freeSize:6, mode:"levels",
   invert:false, sound:false, patterns:false, theme:"auto", palette:"default",
-  diff:"normal", forgiving:false, bonusWins:0, autoX:true, lbPost:true, dragX:true,
+  diff:"normal", forgiving:false, bonusWins:0, autoX:true, lbPost:true, dragX:true, dragStraight:true,
   cats:{},                 // id -> {first:"YYYY-MM-DD", visits:n}
   solved:0, winStreak:0, bestStreak:0,
   bestTime:{}, bestScore:{},
@@ -1607,7 +1613,7 @@ var labelLevel = 1;       // level the board on screen belongs to
 var labelDay = "";        // date the Daily board on screen was built for
 var pendingPlace = -1, pendingPlaceTimer = null;   // single-tap mode: cat waiting out the double-tap window
 var INVERT_MS = 300;
-var drag = null;          // finger currently down on the board: {id, start, last, erase, active, count}
+var drag = null;          // finger currently down on the board: {id, start, last, erase, active, count, x0, y0, axis}
 var dragClickBlock = false;
 var fingerTapAt = 0;      // when a finger tap was last handled straight from pointerup
 
@@ -2384,18 +2390,39 @@ boardEl.addEventListener("pointerdown", function(e){
   if(e.pointerType === "mouse" && e.button !== 0) return;
   var i = cellAtPoint(e.clientX, e.clientY);
   if(i < 0) return;
-  drag = { id: e.pointerId, start: i, last: i, erase: grid[i] === MARK, active: false, count: 0 };
+  drag = { id: e.pointerId, start: i, last: i, erase: grid[i] === MARK, active: false, count: 0,
+           x0: e.clientX, y0: e.clientY, axis: null };
 });
+/* Straight drags. Once a stroke has an axis, the finger's position is
+   projected onto that row or column: only the coordinate along the axis is
+   read, so drifting sideways (or right off the board) keeps marking the
+   same line instead of the one next door. Worked out from the board's own
+   geometry rather than from the element under the finger, for that reason. */
+function cellOnAxis(x, y){
+  var rect = boardEl.getBoundingClientRect();
+  var c = Math.floor((x - rect.left - boardEl.clientLeft) / (boardEl.clientWidth / N));
+  var r = Math.floor((y - rect.top - boardEl.clientTop) / (boardEl.clientHeight / N));
+  c = Math.max(0, Math.min(N - 1, c));
+  r = Math.max(0, Math.min(N - 1, r));
+  return drag.axis === "row" ? rowOf(drag.start) * N + c : r * N + colOf(drag.start);
+}
 boardEl.addEventListener("pointermove", function(e){
   if(!drag || e.pointerId !== drag.id) return;
   if(locked || solved){ drag = null; return; }
   var i = cellAtPoint(e.clientX, e.clientY);
-  if(i < 0 || i === drag.last) return;
   if(!drag.active){
+    if(i < 0 || i === drag.start) return;        // still inside the first square: not a drag yet
     drag.active = true;
     drag.snap = grid.slice();
+    // The axis is the direction the finger has actually travelled since it
+    // went down, not which neighbour it happened to clip first.
+    if(S.dragStraight){
+      drag.axis = Math.abs(e.clientX - drag.x0) >= Math.abs(e.clientY - drag.y0) ? "row" : "col";
+    }
     dragApply(drag.start);
   }
+  if(drag.axis) i = cellOnAxis(e.clientX, e.clientY);
+  if(i < 0 || i === drag.last) return;
   dragLine(drag.last, i);
   drag.last = i;
 });
@@ -2916,7 +2943,7 @@ function syncSettings(){
   setSwitch($("swInvert"), S.invert); setSwitch($("swSound"), S.sound); setSwitch($("swPat"), S.patterns);
   setSwitch($("swForgive"), S.forgiving);
   setSwitch($("swAuto"), S.autoX); setSwitch($("swPost"), S.lbPost);
-  setSwitch($("swDrag"), S.dragX);
+  setSwitch($("swDrag"), S.dragX); setSwitch($("swStraight"), S.dragStraight);
   syncSeg("#themePick", "theme", S.theme);
   renderPalettes(); renderStats();
 }
@@ -2954,6 +2981,7 @@ $("swAuto").onclick = function(){
   S.autoX = !S.autoX; setSwitch(this, S.autoX); saveState();
   if(puzzle && grid.length){ recomputeAuto(); paint(); }
 };
+$("swStraight").onclick = function(){ S.dragStraight = !S.dragStraight; setSwitch(this, S.dragStraight); saveState(); };
 $("swDrag").onclick = function(){ S.dragX = !S.dragX; setSwitch(this, S.dragX); saveState(); applyTheme(); };
 $("swPost").onclick = function(){
   S.lbPost = !S.lbPost; setSwitch(this, S.lbPost); saveState();

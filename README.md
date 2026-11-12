@@ -4,6 +4,9 @@ A cat logic puzzle in one HTML file. One cat per row, column and coloured patch,
 
 Open `index.html` in a browser. Add `?test=1` to run the puzzle core tests (`&n=40` sets puzzles per size).
 
+## Build 13
+- Straight drags: a drag-to-mark stroke locks to the row or column it sets off along, so drifting sideways or overshooting the edge cannot mark the line next door (Settings switch, on by default; off gives free drawing)
+
 ## Build 12
 - Drag to mark: slide a finger across the board to put an × on every empty square it crosses; start on an × to rub marks out. One Undo step per stroke, never places a cat (Settings switch, on by default)
 - Finger taps are handled from pointer events, so the first tap after a drag is no longer swallowed by the browser
