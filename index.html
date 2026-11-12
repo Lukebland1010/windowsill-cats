@@ -517,7 +517,7 @@ textarea{
     <p class="tip"><b>Auto &times;:</b> when a cat sits down, the squares it rules out get a faint &times; on their own. Those squares cannot take a cat, so tapping one does nothing and costs nothing. You can switch this off in Settings.</p>
     <p class="tip"><b>Hint</b> points at the next square you can work out and tells you why. Tap it again to sit the cat there.</p>
     <p class="tip"><b>Difficulty:</b> Normal gives you extra starter cats, Hard gives you one, Expert gives you none.</p>
-    <p class="tip"><b>Daily board:</b> the Daily puzzle is the same for everyone. If you are signed in, your first solve time of the day goes on the shared board under the puzzle. Restarting is free, but only that first solve counts.</p>
+    <p class="tip" id="tipDaily"><b>Daily board:</b> the Daily puzzle is the same for everyone. If you are signed in, your first solve time of the day goes on the shared board under the puzzle. Restarting is free, but only that first solve counts.</p>
     <p class="tip"><b>Bonus boards</b> show up after every fourth level. One heart, no hints, and a rarer cat if you clear it. Always optional, and they never block your next level.</p>
   </details>
 
@@ -569,7 +569,7 @@ textarea{
         </div>
         <button class="sw" id="swAuto" role="switch" aria-checked="false"><i></i></button>
       </div>
-      <div class="row">
+      <div class="row" id="rowPost">
         <div class="lab">Post my daily time
           <span class="hint">Shares your first solve time each day, with your name, on the Daily board. Only people you have shared this page with can see it.</span>
         </div>
@@ -630,7 +630,7 @@ textarea{
       </div>
     </div>
 
-    <footer>Windowsill Cats. No ads, no analytics. Your save stays on this device. The only thing ever sent anywhere is your daily time, and only if posting is switched on.</footer>
+    <footer>Windowsill Cats. No ads, no analytics. Your save stays on this device. Nothing is sent anywhere, except your daily time where the shared Daily board is available and posting is switched on.</footer>
   </div>
 </div>
 
@@ -2596,7 +2596,14 @@ var lbDraw = 0;
 
 function lbInit(){
   if(LB.state !== "off") return;
-  if(!window.claude || typeof window.claude.use !== "function") return;
+  // Hosted somewhere without the shared store: the board cannot exist, so do
+  // not show a switch or a help line that promise one.
+  if(!window.claude || typeof window.claude.use !== "function"){
+    $("rowPost").style.display = "none";
+    $("tipDaily").style.display = "none";
+    LB.state = "none";
+    return;
+  }
   LB.state = "wait";
   Promise.all([window.claude.use("db"), window.claude.use("user")]).then(function(r){
     LB.db = r[0]; LB.user = r[1];
