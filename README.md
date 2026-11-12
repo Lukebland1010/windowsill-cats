@@ -4,6 +4,10 @@ A cat logic puzzle in one HTML file. One cat per row, column and coloured patch,
 
 Open `index.html` in a browser. Add `?test=1` to run the puzzle core tests (`&n=40` sets puzzles per size).
 
+## Build 12
+- Drag to mark: slide a finger across the board to put an × on every empty square it crosses; start on an × to rub marks out. One Undo step per stroke, never places a cat (Settings switch, on by default)
+- Finger taps are handled from pointer events, so the first tap after a drag is no longer swallowed by the browser
+
 ## Build 11
 - Auto ×: placing a cat fills a faint × on every square it rules out (Settings switch, on by default)
 - Daily board: on claude.ai, signed-in players post their first solve time of the day to a shared list under the Daily puzzle. Needs the `db` and `user` artifact capabilities; the card stays hidden anywhere else

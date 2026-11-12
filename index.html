@@ -188,6 +188,9 @@ h1 .p{color:var(--accent)}
   background-repeat:repeat; outline-offset:-4px;
   -webkit-touch-callout:none;
 }
+/* drag-to-mark needs the board to keep the finger: no page scroll or zoom
+   may start from inside it. Scrolling still works from anywhere else. */
+.board.dragx{touch-action:none}
 .cell:focus-visible{outline:3px solid var(--accent); z-index:4}
 .cell .cat{display:block; animation:pop .2s ease-out}
 .cell .mark{
@@ -514,6 +517,7 @@ textarea{
     </ol>
     <p class="tip">Start from the <b>starter cat</b> with the lock. It is already in the right spot, so it rules out its whole row, column, patch and every square touching it.</p>
     <p class="tip">Tap once to mark a square with &times; &mdash; that is just your own note, it costs nothing. Tap twice on the same square to sit a cat there. Tap a cat to pick it back up. A cat in the wrong square costs a heart. Lose all three and the board is lost: try it again or take a new one.</p>
+    <p class="tip"><b>Drag to mark:</b> slide your finger across the board and every empty square it crosses gets an &times;. Start the drag on an &times; and it rubs marks out instead. Dragging never places a cat, so it can never cost a heart.</p>
     <p class="tip"><b>Auto &times;:</b> when a cat sits down, the squares it rules out get a faint &times; on their own. Those squares cannot take a cat, so tapping one does nothing and costs nothing. You can switch this off in Settings.</p>
     <p class="tip"><b>Hint</b> points at the next square you can work out and tells you why. Tap it again to sit the cat there.</p>
     <p class="tip"><b>Difficulty:</b> Normal gives you extra starter cats, Hard gives you one, Expert gives you none.</p>
@@ -524,7 +528,7 @@ textarea{
   <footer>
     Every puzzle is generated fresh and has exactly one solution.<br>
     No ads, no lives to buy. Plays offline.<br>
-    <span style="opacity:.6">build 11</span>
+    <span style="opacity:.6">build 12</span>
   </footer>
 </div>
 
@@ -562,6 +566,12 @@ textarea{
           <span class="hint">Off: run out of hearts and the board is lost, so you start it over. On: hearts refill for free and you keep your progress.</span>
         </div>
         <button class="sw" id="swForgive" role="switch" aria-checked="false"><i></i></button>
+      </div>
+      <div class="row">
+        <div class="lab">Drag to mark &times;
+          <span class="hint">Slide a finger across the board to mark every square it crosses. Start on an &times; to rub marks out instead. While this is on, the page does not scroll from inside the board.</span>
+        </div>
+        <button class="sw" id="swDrag" role="switch" aria-checked="false"><i></i></button>
       </div>
       <div class="row">
         <div class="lab">Auto &times;
@@ -1474,7 +1484,7 @@ var SKEY = "windowsillcats.v1";
 var DEFAULTS = {
   level:1, freeSize:6, mode:"levels",
   invert:false, sound:false, patterns:false, theme:"auto", palette:"default",
-  diff:"normal", forgiving:false, bonusWins:0, autoX:true, lbPost:true,
+  diff:"normal", forgiving:false, bonusWins:0, autoX:true, lbPost:true, dragX:true,
   cats:{},                 // id -> {first:"YYYY-MM-DD", visits:n}
   solved:0, winStreak:0, bestStreak:0,
   bestTime:{}, bestScore:{},
@@ -1597,6 +1607,9 @@ var labelLevel = 1;       // level the board on screen belongs to
 var labelDay = "";        // date the Daily board on screen was built for
 var pendingPlace = -1, pendingPlaceTimer = null;   // single-tap mode: cat waiting out the double-tap window
 var INVERT_MS = 300;
+var drag = null;          // finger currently down on the board: {id, start, last, erase, active, count}
+var dragClickBlock = false;
+var fingerTapAt = 0;      // when a finger tap was last handled straight from pointerup
 
 var DIFF_NAMES = { normal:"Normal", hard:"Hard", expert:"Expert" };
 function diffNow(){
@@ -2315,10 +2328,110 @@ function pulse(i){
    CONTROLS
    ===================================================================== */
 boardEl.addEventListener("click", function(e){
+  // the click that ends a drag belongs to the drag, not to a tap
+  if(dragClickBlock){ dragClickBlock = false; return; }
+  // a finger tap was already handled on pointerup; this is its echo
+  if(Date.now() - fingerTapAt < 500) return;
   var cell = e.target.closest(".cell");
   if(!cell) return;
   handleTap(+cell.dataset.i);
 });
+
+/* =====================================================================
+   DRAG TO MARK
+   Slide across the board and every empty square crossed gets an x. If the
+   drag starts on an x it rubs marks out instead. It only ever touches
+   EMPTY and MARK squares: never a cat, a starter, an auto x or a square
+   mid-rejection, so it cannot cost a heart.
+
+   A press that never leaves its first square is not a drag: it falls
+   through to the ordinary click, so single and double taps are unchanged.
+   The whole drag is one Undo step.
+   ===================================================================== */
+function cellAtPoint(x, y){
+  var el = document.elementFromPoint(x, y);
+  var cell = el && el.closest ? el.closest(".cell") : null;
+  return (cell && boardEl.contains(cell)) ? +cell.dataset.i : -1;
+}
+function dragApply(i){
+  if(i < 0 || i >= grid.length || i === rejectCell || isGiven(i)) return;
+  var want;
+  if(drag.erase){ if(grid[i] !== MARK) return; want = EMPTY; }
+  else { if(grid[i] !== EMPTY) return; want = MARK; }
+  if(!drag.count){
+    // first real change of this stroke: that is the moment it becomes an
+    // Undo step, so a stroke that changes nothing leaves Undo/Redo alone
+    undoStack.push(drag.snap);
+    redoStack.length = 0;
+    startClock();
+  }
+  grid[i] = want;
+  drag.count++;
+  // touch only this square: a full paint() would replay every cat's pop
+  boardEl.children[i].innerHTML = want === MARK ? '<span class="mark">×</span>' : "";
+}
+// A fast finger skips squares between two move events. Walk the straight
+// line between them on the grid so the stroke has no gaps.
+function dragLine(a, b){
+  var r0 = rowOf(a), c0 = colOf(a), r1 = rowOf(b), c1 = colOf(b);
+  var steps = Math.max(Math.abs(r1 - r0), Math.abs(c1 - c0));
+  for(var k = 1; k <= steps; k++){
+    dragApply(Math.round(r0 + (r1 - r0) * k / steps) * N + Math.round(c0 + (c1 - c0) * k / steps));
+  }
+}
+boardEl.addEventListener("pointerdown", function(e){
+  if(!S.dragX || drag || locked || solved || !puzzle) return;
+  if(e.pointerType === "mouse" && e.button !== 0) return;
+  var i = cellAtPoint(e.clientX, e.clientY);
+  if(i < 0) return;
+  drag = { id: e.pointerId, start: i, last: i, erase: grid[i] === MARK, active: false, count: 0 };
+});
+boardEl.addEventListener("pointermove", function(e){
+  if(!drag || e.pointerId !== drag.id) return;
+  if(locked || solved){ drag = null; return; }
+  var i = cellAtPoint(e.clientX, e.clientY);
+  if(i < 0 || i === drag.last) return;
+  if(!drag.active){
+    drag.active = true;
+    drag.snap = grid.slice();
+    dragApply(drag.start);
+  }
+  dragLine(drag.last, i);
+  drag.last = i;
+});
+function dragEnd(e, cancelled){
+  if(!drag || e.pointerId !== drag.id) return;
+  var d = drag;
+  drag = null;
+  if(!d.active){
+    /* The finger never left its first square, so this is a tap. Handle it
+       here instead of waiting for the browser's click: right after a drag,
+       Chrome treats the next tap as "stop the scroll" and never sends its
+       click, which made the first tap after every stroke do nothing. The
+       click that does arrive is ignored (see the click handler). Mouse
+       taps keep using click. */
+    if(!cancelled && e.pointerType !== "mouse" && cellAtPoint(e.clientX, e.clientY) === d.start){
+      fingerTapAt = Date.now();
+      handleTap(d.start);
+    }
+    return;
+  }
+  if(!cancelled){
+    // swallow the click this release produces, then stop swallowing
+    dragClickBlock = true;
+    setTimeout(function(){ dragClickBlock = false; }, 80);
+  }
+  lastTapCell = -1;                // a drag is never the first half of a double tap
+  if(d.count){
+    SFX.mark();
+    say((d.erase ? "Rubbed out <b>" : "Marked <b>") + d.count + "</b> square" + (d.count === 1 ? "" : "s") + ".");
+  }
+  $("undo").disabled = undoStack.length === 0;
+  $("redo").disabled = redoStack.length === 0;
+  updateAria();
+}
+window.addEventListener("pointerup", function(e){ dragEnd(e, false); });
+window.addEventListener("pointercancel", function(e){ dragEnd(e, true); });
 
 boardEl.addEventListener("keydown", function(e){
   var cell = e.target.closest(".cell");
@@ -2452,6 +2565,7 @@ function resetAttempt(){
   hearts = maxHearts(); hintsUsed = 0; heartsLost = 0; solved = false; locked = false;
   undoStack = []; redoStack = []; completedRegions = {}; pendingHint = null;
   cancelPendingPlace();
+  drag = null;
   startedAt = 0; elapsed = 0; stopClock();
   lastTapCell = -1; rejectCell = -1; clearTimeout(rejectTimer);
   $("timer").textContent = "0:00";
@@ -2748,6 +2862,7 @@ function applyTheme(){
   if(S.palette && S.palette !== "default") root.setAttribute("data-pal", S.palette);
   else root.removeAttribute("data-pal");
   boardEl.classList.toggle("pat", !!S.patterns);
+  boardEl.classList.toggle("dragx", !!S.dragX);
 }
 function setSwitch(el, on){ el.setAttribute("aria-checked", on ? "true" : "false"); }
 
@@ -2801,6 +2916,7 @@ function syncSettings(){
   setSwitch($("swInvert"), S.invert); setSwitch($("swSound"), S.sound); setSwitch($("swPat"), S.patterns);
   setSwitch($("swForgive"), S.forgiving);
   setSwitch($("swAuto"), S.autoX); setSwitch($("swPost"), S.lbPost);
+  setSwitch($("swDrag"), S.dragX);
   syncSeg("#themePick", "theme", S.theme);
   renderPalettes(); renderStats();
 }
@@ -2838,6 +2954,7 @@ $("swAuto").onclick = function(){
   S.autoX = !S.autoX; setSwitch(this, S.autoX); saveState();
   if(puzzle && grid.length){ recomputeAuto(); paint(); }
 };
+$("swDrag").onclick = function(){ S.dragX = !S.dragX; setSwitch(this, S.dragX); saveState(); applyTheme(); };
 $("swPost").onclick = function(){
   S.lbPost = !S.lbPost; setSwitch(this, S.lbPost); saveState();
   if(S.lbPost) lbFlush();
